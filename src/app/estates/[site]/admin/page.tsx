@@ -5,9 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/FormControls'
+import { Input } from '@/components/ui/Input'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle } from 'lucide-react'
+import { Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle, Settings, Palette } from 'lucide-react'
 
 interface Resident {
   id: string
@@ -25,16 +26,31 @@ interface Estate {
   markup_percent: number | null
 }
 
+interface Branding {
+  primary_color: string
+  secondary_color: string
+  welcome_message: string
+}
+
 export default function EstateAdminPortal({ params }: { params: Promise<{ site: string }> }) {
   const { site } = use(params)
   const supabase = createClient()
 
   const [estate, setEstate] = useState<Estate | null>(null)
   const [residents, setResidents] = useState<Resident[]>([])
+  const [branding, setBranding] = useState<Branding>({
+    primary_color: '#10b981',
+    secondary_color: '#f59e0b',
+    welcome_message: 'Welcome to our community portal'
+  })
+
+  const [activeTab, setActiveTab] = useState<'residents' | 'customization'>('residents')
   const [yearlyFee, setYearlyFee] = useState<number>(150000)
   const [loading, setLoading] = useState(true)
   const [paying, setPaying] = useState(false)
+  const [savingBranding, setSavingBranding] = useState(false)
   const [actioningId, setActioningId] = useState<string | null>(null)
+  const [brandingMsg, setBrandingMsg] = useState('')
 
   useEffect(() => {
     async function fetchData() {
@@ -57,6 +73,21 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
           if (residentsData) {
             setResidents(residentsData)
+          }
+
+          // Fetch branding details
+          const { data: brandingData } = await supabase
+            .from('tenant_branding')
+            .select('*')
+            .eq('id', estateData.id)
+            .single()
+
+          if (brandingData) {
+            setBranding({
+              primary_color: brandingData.primary_color,
+              secondary_color: brandingData.secondary_color,
+              welcome_message: brandingData.welcome_message || ''
+            })
           }
         }
 
@@ -84,7 +115,6 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     if (!estate) return
     setPaying(true)
     try {
-      // Set expire date to +1 year from now
       const newExpire = new Date()
       newExpire.setFullYear(newExpire.getFullYear() + 1)
 
@@ -110,6 +140,35 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     }
   }
 
+  const handleSaveBranding = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!estate) return
+    setSavingBranding(true)
+    setBrandingMsg('')
+    try {
+      const { error } = await supabase
+        .from('tenant_branding')
+        .upsert({
+          id: estate.id,
+          primary_color: branding.primary_color,
+          secondary_color: branding.secondary_color,
+          welcome_message: branding.welcome_message,
+          updated_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+      setBrandingMsg('Branding customization saved successfully!')
+      // Refresh page client side to show updated CSS variables
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (err) {
+      console.error('Failed to save branding:', err)
+    } finally {
+      setSavingBranding(false)
+    }
+  }
+
   const handleApproveResident = async (residentId: string) => {
     setActioningId(residentId)
     try {
@@ -131,7 +190,6 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
   const handleRejectResident = async (residentId: string) => {
     setActioningId(residentId)
     try {
-      // Disassociate the resident from this estate
       const { error } = await supabase
         .from('profiles')
         .update({ estate_id: null, role: 'unverified' })
@@ -174,7 +232,8 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     )
   }
 
-  const pendingResidents = residents.filter(r => r.role === 'unverified')
+  const pendingResidents = residents.filter(r => r.role === 'unverified' || r.role === 'resident' && false) // adjust filter if needed
+  // let's define resident verification status correctly
   const activeResidents = residents.filter(r => r.role === 'resident' || r.role === 'estate_admin')
 
   return (
@@ -200,6 +259,26 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
             <Badge variant="success" className="px-3 py-1 font-semibold text-xs rounded-full">
               Subdomain Admin
             </Badge>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-2 border-b border-border pb-px">
+            <button
+              onClick={() => setActiveTab('residents')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+                activeTab === 'residents' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Resident Control
+            </button>
+            <button
+              onClick={() => setActiveTab('customization')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
+                activeTab === 'customization' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Estate CMS &amp; Branding
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -245,76 +324,151 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
               </Card>
             </div>
 
-            {/* Resident Management Column */}
+            {/* Main Area */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Pending Approvals */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-amber-500" />
-                    <h3 className="font-bold text-foreground text-lg">Pending Resident Approvals</h3>
-                  </div>
-                  <Badge variant="warning">{pendingResidents.length} Pending</Badge>
-                </div>
+              {activeTab === 'residents' && (
+                <>
+                  {/* Pending Approvals */}
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-amber-500" />
+                        <h3 className="font-bold text-foreground text-lg">Pending Resident Approvals</h3>
+                      </div>
+                      <Badge variant="warning">{pendingResidents.length} Pending</Badge>
+                    </div>
 
-                {pendingResidents.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">No residents are waiting for approval.</p>
-                ) : (
-                  <div className="divide-y divide-border/60">
-                    {pendingResidents.map(resident => (
-                      <div key={resident.id} className="flex items-center justify-between py-3">
-                        <span className="font-semibold text-foreground">{resident.full_name}</span>
+                    {pendingResidents.length === 0 ? (
+                      <p className="text-muted-foreground text-sm py-4">No residents are waiting for approval.</p>
+                    ) : (
+                      <div className="divide-y divide-border/60">
+                        {pendingResidents.map(resident => (
+                          <div key={resident.id} className="flex items-center justify-between py-3">
+                            <span className="font-semibold text-foreground">{resident.full_name}</span>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveResident(resident.id)}
+                                disabled={actioningId === resident.id}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRejectResident(resident.id)}
+                                disabled={actioningId === resident.id}
+                                className="text-red-500 hover:bg-red-500 hover:text-white border-red-500/30 rounded-lg px-3 py-1"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+
+                  {/* Active Residents list */}
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        <h3 className="font-bold text-foreground text-lg">Verified Residents</h3>
+                      </div>
+                      <Badge variant="default">{activeResidents.length} Total</Badge>
+                    </div>
+
+                    {activeResidents.length === 0 ? (
+                      <p className="text-muted-foreground text-sm py-4">No verified residents in this estate.</p>
+                    ) : (
+                      <div className="divide-y divide-border/60">
+                        {activeResidents.map(resident => (
+                          <div key={resident.id} className="flex items-center justify-between py-3">
+                            <span className="font-medium text-foreground">{resident.full_name}</span>
+                            <Badge variant={resident.role === 'estate_admin' ? 'success' : 'default'}>
+                              {resident.role}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </>
+              )}
+
+              {activeTab === 'customization' && (
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+                    <Palette className="h-5 w-5 text-primary" />
+                    <h3 className="font-bold text-foreground text-lg">Branding &amp; Customization</h3>
+                  </div>
+
+                  <form onSubmit={handleSaveBranding} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Primary Brand Color</label>
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveResident(resident.id)}
-                            disabled={actioningId === resident.id}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRejectResident(resident.id)}
-                            disabled={actioningId === resident.id}
-                            className="text-red-500 hover:bg-red-500 hover:text-white border-red-500/30 rounded-lg px-3 py-1"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <input
+                            type="color"
+                            value={branding.primary_color}
+                            onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
+                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={branding.primary_color}
+                            onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
+                            className="flex-1 rounded-xl border border-input bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
 
-              {/* Active Residents list */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-foreground text-lg">Verified Residents</h3>
-                  </div>
-                  <Badge variant="default">{activeResidents.length} Total</Badge>
-                </div>
-
-                {activeResidents.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">No verified residents in this estate.</p>
-                ) : (
-                  <div className="divide-y divide-border/60">
-                    {activeResidents.map(resident => (
-                      <div key={resident.id} className="flex items-center justify-between py-3">
-                        <span className="font-medium text-foreground">{resident.full_name}</span>
-                        <Badge variant={resident.role === 'estate_admin' ? 'success' : 'default'}>
-                          {resident.role}
-                        </Badge>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Secondary Brand Color</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={branding.secondary_color}
+                            onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
+                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={branding.secondary_color}
+                            onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
+                            className="flex-1 rounded-xl border border-input bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Portal Welcome Message</label>
+                      <textarea
+                        rows={3}
+                        value={branding.welcome_message}
+                        onChange={(e) => setBranding({ ...branding, welcome_message: e.target.value })}
+                        className="w-full rounded-xl border border-input bg-card p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Welcome residents to our gated community portal..."
+                      />
+                    </div>
+
+                    {brandingMsg && (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-1.5 animate-fade-in">
+                        <CheckCircle className="h-4 w-4 shrink-0" />
+                        <span>{brandingMsg}</span>
+                      </div>
+                    )}
+
+                    <Button type="submit" disabled={savingBranding} className="w-full font-semibold rounded-xl">
+                      {savingBranding ? 'Saving...' : 'Save Branding Changes'}
+                    </Button>
+                  </form>
+                </Card>
+              )}
 
             </div>
 

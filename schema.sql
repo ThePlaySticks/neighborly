@@ -119,3 +119,89 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 7. Tenant Branding Table
+CREATE TABLE IF NOT EXISTS public.tenant_branding (
+    id uuid PRIMARY KEY REFERENCES public.estates(id) ON DELETE CASCADE,
+    logo_url text,
+    primary_color text NOT NULL DEFAULT '#10b981', -- default green-500
+    secondary_color text NOT NULL DEFAULT '#06b6d4', -- default cyan-500
+    welcome_message text DEFAULT 'Welcome to our community portal',
+    banner_url text,
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on branding
+ALTER TABLE public.tenant_branding ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read estate branding" 
+ON public.tenant_branding FOR SELECT USING (true);
+
+CREATE POLICY "Estate admins can modify their branding" 
+ON public.tenant_branding FOR ALL 
+USING (
+    id IN (
+        SELECT id FROM public.estates WHERE admin_id = auth.uid()
+    )
+);
+
+-- 8. Announcements Table
+CREATE TABLE IF NOT EXISTS public.announcements (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    estate_id uuid NOT NULL REFERENCES public.estates(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on announcements
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Residents can view announcements from their estate" 
+ON public.announcements FOR SELECT 
+USING (
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+CREATE POLICY "Estate admins can manage announcements" 
+ON public.announcements FOR ALL 
+USING (
+    estate_id IN (
+        SELECT id FROM public.estates WHERE admin_id = auth.uid()
+    )
+);
+
+-- 9. Marketplace Items Table
+CREATE TABLE IF NOT EXISTS public.marketplace_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    estate_id uuid NOT NULL REFERENCES public.estates(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    description text,
+    price numeric NOT NULL,
+    owner_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    image_url text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on marketplace items
+ALTER TABLE public.marketplace_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Residents can view marketplace items in their estate" 
+ON public.marketplace_items FOR SELECT 
+USING (
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+CREATE POLICY "Residents can manage their own marketplace items" 
+ON public.marketplace_items FOR ALL 
+USING (
+    owner_id = auth.uid() AND 
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
