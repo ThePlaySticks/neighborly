@@ -85,6 +85,12 @@ FOR ALL
 USING (admin_id = auth.uid())
 WITH CHECK (admin_id = auth.uid());
 
+CREATE POLICY "Authenticated users can insert an estate" 
+ON public.estates 
+FOR INSERT 
+TO authenticated 
+WITH CHECK (admin_id = auth.uid());
+
 CREATE POLICY "Residents can view their own estate" 
 ON public.estates 
 FOR SELECT 
@@ -94,3 +100,22 @@ USING (
         WHERE profiles.id = auth.uid()
     )
 );
+
+-- 6. Trigger to automatically create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, role, estate_id)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    COALESCE(new.raw_user_meta_data->>'role', 'resident'),
+    (new.raw_user_meta_data->>'estate_id')::uuid
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

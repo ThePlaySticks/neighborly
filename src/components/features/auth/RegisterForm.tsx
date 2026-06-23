@@ -1,23 +1,75 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/FormControls'
+import { Select, Badge } from '@/components/ui/FormControls'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
+import { Shield, Home, Briefcase, ChevronRight, User } from 'lucide-react'
+
+interface Estate {
+  id: string
+  name: string
+  subdomain: string
+}
 
 export function RegisterForm() {
   const supabase = createClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('resident')
-  const [neighborhood, setNeighborhood] = useState('')
+  const [role, setRole] = useState('resident') // 'resident', 'estate_admin', 'provider'
+  
+  // Estate selection for residents
+  const [estates, setEstates] = useState<Estate[]>([])
+  const [selectedEstateId, setSelectedEstateId] = useState('')
+  const [detectedSubdomain, setDetectedSubdomain] = useState<string | null>(null)
+  const [detectedEstate, setDetectedEstate] = useState<Estate | null>(null)
+
+  // New estate details for estate admins
+  const [newEstateName, setNewEstateName] = useState('')
+  const [newEstateSubdomain, setNewEstateSubdomain] = useState('')
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // 1. Detect subdomain client-side and fetch estates
+  useEffect(() => {
+    async function initRegisterForm() {
+      // Fetch all estates for dropdown selection
+      const { data: estatesData } = await supabase
+        .from('estates')
+        .select('id, name, subdomain')
+      
+      if (estatesData) {
+        setEstates(estatesData)
+      }
+
+      // Detect subdomain
+      if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname
+        const parts = hostname.split('.')
+        const rootDomains = ['localhost', 'neighborly', 'www']
+        const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0])
+        
+        if (isSubdomain) {
+          const sub = parts[0]
+          setDetectedSubdomain(sub)
+          
+          // Match with fetched estates
+          const matched = estatesData?.find(e => e.subdomain === sub)
+          if (matched) {
+            setDetectedEstate(matched)
+            setSelectedEstateId(matched.id)
+          }
+        }
+      }
+    }
+    initRegisterForm()
+  }, [])
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,25 +77,61 @@ export function RegisterForm() {
     setLoading(true)
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Validations
+      if (role === 'resident' && !selectedEstateId) {
+        throw new Error('Please select an estate to join')
+      }
+      if (role === 'estate_admin' && (!newEstateName || !newEstateSubdomain)) {
+        throw new Error('Please enter both estate name and desired subdomain')
+      }
+
+      // 1. Sign up the user in Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
             role: role,
-            neighborhood: neighborhood,
+            estate_id: role === 'resident' ? selectedEstateId : null,
           },
         },
       })
 
-      if (signUpError) {
-        setError(signUpError.message)
-      } else {
-        setSuccess(true)
+      if (signUpError) throw signUpError
+
+      const userId = signUpData.user?.id
+      if (!userId) throw new Error('Registration failed, no user ID returned')
+
+      // 2. If registering as an Estate Admin, create the estate record
+      if (role === 'estate_admin') {
+        const { data: estateData, error: estateError } = await supabase
+          .from('estates')
+          .insert({
+            name: newEstateName,
+            subdomain: newEstateSubdomain.toLowerCase().trim(),
+            admin_id: userId,
+            subscription_status: 'active' // Initial registration active
+          })
+          .select()
+          .single()
+
+        if (estateError) throw estateError
+
+        // Link the estate admin profile to their newly created estate
+        if (estateData) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ estate_id: estateData.id })
+            .eq('id', userId)
+          
+          if (profileError) throw profileError
+        }
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred during registration')
+
+      setSuccess(true)
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration')
     } finally {
       setLoading(false)
     }
@@ -53,14 +141,14 @@ export function RegisterForm() {
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-primary">Check your email</CardTitle>
+          <CardTitle className="text-2xl text-primary font-black">Check your email</CardTitle>
           <CardDescription>
             We have sent a verification link to <strong className="text-foreground">{email}</strong>. Please check your inbox and verify your account.
           </CardDescription>
         </CardHeader>
         <CardFooter className="flex justify-center">
           <Link href="/login">
-            <Button>Back to Sign In</Button>
+            <Button className="font-semibold rounded-xl">Back to Sign In</Button>
           </Link>
         </CardFooter>
       </Card>
@@ -69,19 +157,20 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleRegister} className="w-full max-w-md mx-auto">
-      <Card className="shadow-lg border border-border">
+      <Card className="shadow-2xl border border-border">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center font-bold tracking-tight">Create an account</CardTitle>
-          <CardDescription className="text-center">
-            Join Neighborly today to connect with your neighborhood
+          <CardTitle className="text-3xl text-center font-black tracking-tight">Create account</CardTitle>
+          <CardDescription className="text-center text-sm">
+            Join Neighborly today to connect with your community
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border border-destructive/20 font-medium">
+            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl border border-destructive/20 font-medium">
               {error}
             </div>
           )}
+          
           <Input
             label="Full Name"
             placeholder="John Doe"
@@ -105,28 +194,100 @@ export function RegisterForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="I am a"
-              options={[
-                { label: 'Resident', value: 'resident' },
-                { label: 'Artisan / Provider', value: 'provider' },
-                { label: 'Business Owner', value: 'business' },
-              ]}
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            />
-            <Input
-              label="Neighborhood / Gated Estate"
-              placeholder="e.g. Lekki Phase 1"
-              required
-              value={neighborhood}
-              onChange={(e) => setNeighborhood(e.target.value)}
-            />
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sign up as</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('resident')}
+                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                  role === 'resident'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Home className="h-4 w-4" />
+                <span>Resident</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('estate_admin')}
+                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                  role === 'estate_admin'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                <span>Estate Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('provider')}
+                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
+                  role === 'provider'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Briefcase className="h-4 w-4" />
+                <span>Artisan</span>
+              </button>
+            </div>
           </div>
+
+          {/* Conditional Fields based on Role Selection */}
+          {role === 'resident' && (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Your Estate</label>
+              {detectedEstate ? (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground flex items-center justify-between">
+                  <span>🏡 Joined to <strong>{detectedEstate.name}</strong></span>
+                  <Badge variant="success">Detected</Badge>
+                </div>
+              ) : (
+                <Select
+                  options={[
+                    { label: '-- Select Gated Estate --', value: '' },
+                    ...estates.map(e => ({ label: e.name, value: e.id }))
+                  ]}
+                  value={selectedEstateId}
+                  onChange={(e) => setSelectedEstateId(e.target.value)}
+                />
+              )}
+            </div>
+          )}
+
+          {role === 'estate_admin' && (
+            <div className="space-y-4 border-t border-border pt-4">
+              <Input
+                label="Estate / Community Name"
+                placeholder="e.g. Lekki Phase 1"
+                required
+                value={newEstateName}
+                onChange={(e) => setNewEstateName(e.target.value)}
+              />
+              <div className="space-y-1">
+                <Input
+                  label="Desired Subdomain"
+                  placeholder="e.g. lekki-1"
+                  required
+                  value={newEstateSubdomain}
+                  onChange={(e) => setNewEstateSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                />
+                {newEstateSubdomain && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Your estate portal will be at: <strong className="text-primary">{newEstateSubdomain}.neighborly.ng</strong>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" isLoading={loading}>
+          <Button type="submit" className="w-full font-semibold rounded-xl" isLoading={loading}>
             Create Account
           </Button>
           <div className="text-center text-sm text-muted-foreground">
