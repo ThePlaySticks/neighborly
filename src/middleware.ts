@@ -20,12 +20,17 @@ export async function middleware(request: NextRequest) {
     return hostClean === domainClean
   })
 
-  // Exclude static assets from rewriting
+  // Exclude static assets and auth paths from rewriting
   const isAsset = url.pathname.startsWith('/_next') || 
                   url.pathname.startsWith('/api') || 
                   url.pathname.includes('.')
 
-  if (!isRootDomain && !isAsset) {
+  const isAuth = url.pathname.startsWith('/login') || 
+                 url.pathname.startsWith('/signup') || 
+                 url.pathname.startsWith('/forgot-password') || 
+                 url.pathname.startsWith('/reset-password')
+
+  if (!isRootDomain && !isAsset && !isAuth) {
     const parts = hostClean.split('.')
     // E.g. lekki.localhost or lekki.neighborly.ng
     const subdomain = parts[0]
