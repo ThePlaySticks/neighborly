@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
 
   // Define root domains (local and production)
-  const rootDomains = ['localhost:3000', 'neighborly.ng', 'www.neighborly.ng', 'neighborly-gamma.vercel.app']
+  const rootDomains = ['localhost:3000', 'neighborly.ng', 'www.neighborly.ng', 'neighborly-gamma.vercel.app', 'neighborly-zeta.vercel.app']
   
   // Clean hostname (remove port if any)
   const hostClean = hostname.split(':')[0]

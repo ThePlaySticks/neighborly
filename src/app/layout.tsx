@@ -32,7 +32,7 @@ export default async function RootLayout({
   const host = headerList.get("host") || "";
   const hostClean = host.split(":")[0];
   
-  const rootDomains = ['localhost', 'neighborly', 'www', 'neighborly-gamma.vercel.app'];
+  const rootDomains = ['localhost', 'neighborly', 'www', 'neighborly-gamma.vercel.app', 'neighborly-zeta.vercel.app'];
   const parts = hostClean.split('.');
   const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0]);
   
