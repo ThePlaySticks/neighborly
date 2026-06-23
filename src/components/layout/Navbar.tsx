@@ -11,23 +11,52 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
+  const [isSubdomain, setIsSubdomain] = useState(false)
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      const parts = hostname.split('.')
+      const rootDomains = ['localhost', 'neighborly', 'www']
+      const hasSubdomain = parts.length > 1 && !rootDomains.includes(parts[0])
+      setIsSubdomain(hasSubdomain)
+    }
+  }, [])
+
+  // Links for residents on a specific estate subdomain
+  const subdomainLinks = [
+    { label: 'Portal Home', href: '/' },
+    { label: 'Notice Board', href: '/notices' },
+    { label: 'Marketplace', href: '/marketplace' },
+    { label: 'Book Artisans', href: '/services' },
+  ]
+
+  // Links for visitors on the main SaaS product landing page
+  const mainLinks = [
+    { label: 'Product Features', href: '#features' },
+    { label: 'How It Works', href: '#how-it-works' },
+    { label: 'Pricing Plan', href: '#pricing' },
+    { label: 'Contact Us', href: '#contact' },
+  ]
+
+  const links = isSubdomain ? subdomainLinks : mainLinks
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href={isSubdomain ? '/' : 'http://localhost:3000'} className="flex items-center space-x-2">
           <span className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg shadow-sm">
             N
           </span>
           <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
-            Neighborly
+            {isSubdomain ? 'Neighborly Portal' : 'Neighborly SaaS'}
           </span>
         </Link>
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center space-x-6">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -121,7 +150,7 @@ export function Navbar() {
       {/* Mobile Menu Panel */}
       {isOpen && (
         <div className="md:hidden border-t border-border bg-card px-4 pt-2 pb-4 space-y-2">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
