@@ -36,6 +36,42 @@ export async function middleware(request: NextRequest) {
     const subdomain = parts[0]
     
     if (subdomain && subdomain !== 'www') {
+      // 2. RBAC check for subdomain admin route
+      if (url.pathname.startsWith('/admin')) {
+        const { createServerClient } = await import('@supabase/ssr')
+        const supabase = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() { return request.cookies.getAll() },
+              setAll(cookiesToSet) {
+                cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+              },
+            },
+          }
+        )
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          return NextResponse.redirect(new URL('/login', request.url))
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, estate_id, estates(subdomain)')
+          .eq('id', user.id)
+          .single()
+
+        const userProfile = profile as any
+        if (
+          !userProfile || 
+          userProfile.role !== 'estate_admin' || 
+          userProfile.estates?.subdomain !== subdomain
+        ) {
+          return NextResponse.redirect(new URL('/', request.url))
+        }
+      }
+
       // Rewrite the URL to the dynamic route /estates/[site]/...
       url.pathname = `/estates/${subdomain}${url.pathname}`
       
@@ -47,6 +83,37 @@ export async function middleware(request: NextRequest) {
       })
       
       return rewriteResponse
+    }
+  }
+
+  // 3. RBAC check for global super-admin route
+  if (url.pathname.startsWith('/super-admin')) {
+    const { createServerClient } = await import('@supabase/ssr')
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          },
+        },
+      }
+    )
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 

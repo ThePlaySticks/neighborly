@@ -205,3 +205,108 @@ USING (
     )
 );
 
+-- 10. Visitor Logs Table
+CREATE TABLE IF NOT EXISTS public.visitor_logs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    estate_id uuid NOT NULL REFERENCES public.estates(id) ON DELETE CASCADE,
+    resident_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    visitor_name text NOT NULL,
+    check_in_code text NOT NULL,
+    status text NOT NULL DEFAULT 'pending', -- 'pending', 'checked_in', 'checked_out'
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on visitor logs
+ALTER TABLE public.visitor_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Residents can view their own visitor logs" 
+ON public.visitor_logs FOR SELECT 
+USING (
+    resident_id = auth.uid()
+);
+
+CREATE POLICY "Residents can create visitor logs" 
+ON public.visitor_logs FOR INSERT 
+TO authenticated 
+WITH CHECK (
+    resident_id = auth.uid() AND 
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+CREATE POLICY "Estate admins can view all visitor logs" 
+ON public.visitor_logs FOR ALL 
+USING (
+    estate_id IN (
+        SELECT id FROM public.estates WHERE admin_id = auth.uid()
+    )
+);
+
+-- 11. Support Tickets Table
+CREATE TABLE IF NOT EXISTS public.support_tickets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    estate_id uuid NOT NULL REFERENCES public.estates(id) ON DELETE CASCADE,
+    resident_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    subject text NOT NULL,
+    description text NOT NULL,
+    status text NOT NULL DEFAULT 'open', -- 'open', 'resolved'
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on support tickets
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Residents can view and create their own tickets" 
+ON public.support_tickets FOR ALL 
+USING (
+    resident_id = auth.uid()
+)
+WITH CHECK (
+    resident_id = auth.uid() AND 
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+CREATE POLICY "Estate admins can manage all tickets in their estate" 
+ON public.support_tickets FOR ALL 
+USING (
+    estate_id IN (
+        SELECT id FROM public.estates WHERE admin_id = auth.uid()
+    )
+);
+
+-- 12. Estate Messages Table (Community Chat)
+CREATE TABLE IF NOT EXISTS public.estate_messages (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    estate_id uuid NOT NULL REFERENCES public.estates(id) ON DELETE CASCADE,
+    profile_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    sender_name text NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS on chat messages
+ALTER TABLE public.estate_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Residents can view chat messages in their estate" 
+ON public.estate_messages FOR SELECT 
+USING (
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+CREATE POLICY "Residents can insert chat messages into their estate" 
+ON public.estate_messages FOR INSERT 
+TO authenticated 
+WITH CHECK (
+    profile_id = auth.uid() AND 
+    estate_id = (
+        SELECT estate_id FROM public.profiles WHERE id = auth.uid()
+    )
+);
+
+
+

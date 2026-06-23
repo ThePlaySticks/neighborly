@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -32,9 +33,9 @@ export default async function RootLayout({
   const host = headerList.get("host") || "";
   const hostClean = host.split(":")[0];
   
-  const rootDomains = ['localhost', 'neighborly', 'www', 'neighborly-gamma.vercel.app', 'neighborly-zeta.vercel.app'];
+  const rootDomains = ['localhost', 'neighborly.ng', 'www.neighborly.ng', 'neighborly-gamma.vercel.app', 'neighborly-zeta.vercel.app'];
+  const isSubdomain = !rootDomains.includes(hostClean);
   const parts = hostClean.split('.');
-  const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0]);
   
   let primaryColor = "#10b981"; // Default emerald-500
   let secondaryColor = "#f59e0b"; // Default amber-500
@@ -91,7 +92,11 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
