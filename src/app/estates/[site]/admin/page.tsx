@@ -39,6 +39,12 @@ interface Branding {
   welcome_message: string
 }
 
+const PLAN_FEES: Record<string, number> = {
+  starter: 150000,
+  professional: 300000,
+  enterprise: 500000
+}
+
 export default function EstateAdminPortal({ params }: { params: Promise<{ site: string }> }) {
   const { site } = use(params)
   const supabase = createClient()
