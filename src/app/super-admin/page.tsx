@@ -21,6 +21,7 @@ interface Estate {
   yearly_fee: number | null
   markup_percent: number | null
   created_at: string
+  subscription_plan?: string
 }
 
 interface SystemSettings {
@@ -129,10 +130,35 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const handleUpdatePlan = async (estateId: string, newPlan: string) => {
+    try {
+      const { error } = await supabase
+        .from('estates')
+        .update({ subscription_plan: newPlan })
+        .eq('id', estateId)
+
+      if (error) throw error
+
+      setEstates(estates.map(e => e.id === estateId ? { ...e, subscription_plan: newPlan } : e))
+    } catch (err) {
+      console.error('Failed to update estate plan:', err)
+    }
+  }
+
   // Computed stats
+  const PLAN_FEES: Record<string, number> = {
+    starter: 150000,
+    professional: 300000,
+    enterprise: 500000
+  }
+
   const activeEstates = estates.filter(e => e.subscription_status === 'active')
   const suspendedEstates = estates.filter(e => e.subscription_status !== 'active')
-  const projectedRevenue = activeEstates.length * settings.yearly_subscription_fee
+  const projectedRevenue = activeEstates.reduce((sum, e) => {
+    if (e.yearly_fee) return sum + Number(e.yearly_fee)
+    const plan = e.subscription_plan?.toLowerCase() || 'starter'
+    return sum + (PLAN_FEES[plan] || 150000)
+  }, 0)
   const expiringThisMonth = estates.filter(e => {
     const expiry = new Date(e.subscription_expires_at)
     const now = new Date()
@@ -397,6 +423,7 @@ export default function SuperAdminDashboard() {
                           <th className="py-3.5 px-5">Estate Name</th>
                           <th className="py-3.5 px-5">Subdomain</th>
                           <th className="py-3.5 px-5">Status</th>
+                          <th className="py-3.5 px-5">Plan</th>
                           <th className="py-3.5 px-5">Expires</th>
                           <th className="py-3.5 px-5">Pricing</th>
                           <th className="py-3.5 px-5 text-right">Actions</th>
@@ -427,6 +454,17 @@ export default function SuperAdminDashboard() {
                               <Badge variant={estate.subscription_status === 'active' ? 'success' : 'warning'}>
                                 {estate.subscription_status}
                               </Badge>
+                            </td>
+                            <td className="py-4 px-5">
+                              <select
+                                value={estate.subscription_plan || 'starter'}
+                                onChange={(e) => handleUpdatePlan(estate.id, e.target.value)}
+                                className="rounded-lg border border-border bg-card text-xs text-foreground px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary font-semibold"
+                              >
+                                <option value="starter">Starter</option>
+                                <option value="professional">Professional</option>
+                                <option value="enterprise">Enterprise</option>
+                              </select>
                             </td>
                             <td className="py-4 px-5 text-xs text-muted-foreground">
                               {new Date(estate.subscription_expires_at).toLocaleDateString()}

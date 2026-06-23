@@ -9,7 +9,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import {
   Shield, Bell, ShoppingBag, AlertTriangle, Users, MapPin, Wrench, ArrowRight,
-  MessageSquare, FileText, Key, LogIn, UserPlus, CheckCircle, Globe, Lock, Zap
+  MessageSquare, FileText, Key, LogIn, UserPlus, CheckCircle, Globe, Lock, Zap, Clock
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -34,7 +34,66 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
   const [branding, setBranding] = useState<Branding | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState('')
+  const [userRole, setUserRole] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [kycStatus, setKycStatus] = useState<string | null>(null)
+  const [kycDocType, setKycDocType] = useState<string | null>(null)
+  const [kycDocUrl, setKycDocUrl] = useState<string | null>(null)
+  const [kycRejectionReason, setKycRejectionReason] = useState<string | null>(null)
+
+  // KYC Form states
+  const [selectedDocType, setSelectedDocType] = useState('nin')
+  const [selectedDocUrl, setSelectedDocUrl] = useState('https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?w=600&auto=format&fit=crop&q=80')
+  const [submittingKyc, setSubmittingKyc] = useState(false)
+  const [kycMsg, setKycMsg] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const fetchKycData = async (uid: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, role, kyc_status, kyc_document_type, kyc_document_url, kyc_rejection_reason')
+        .eq('id', uid)
+        .single()
+      if (profile) {
+        setUserName(profile.full_name || 'Resident')
+        setUserRole(profile.role || 'resident')
+        setKycStatus(profile.kyc_status || 'unuploaded')
+        setKycDocType(profile.kyc_document_type)
+        setKycDocUrl(profile.kyc_document_url)
+        setKycRejectionReason(profile.kyc_rejection_reason)
+      }
+    } catch (e) {
+      console.error('Error fetching profile:', e)
+    }
+  }
+
+  const handleKycSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId) return
+    setSubmittingKyc(true)
+    setKycMsg('')
+    try {
+      const { error: kycError } = await supabase
+        .from('profiles')
+        .update({
+          kyc_status: 'pending',
+          kyc_document_type: selectedDocType,
+          kyc_document_url: selectedDocUrl,
+          kyc_rejection_reason: null
+        })
+        .eq('id', userId)
+
+      if (kycError) throw kycError
+      setKycMsg('KYC documents submitted successfully for review.')
+      await fetchKycData(userId)
+    } catch (err: any) {
+      console.error(err)
+      setKycMsg(err.message || 'Failed to submit KYC documents.')
+    } finally {
+      setSubmittingKyc(false)
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -65,12 +124,8 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setIsAuthenticated(true)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single()
-          if (profile) setUserName(profile.full_name || 'Resident')
+          setUserId(user.id)
+          await fetchKycData(user.id)
         }
       } catch (err) {
         console.error('Error fetching estate:', err)
@@ -271,6 +326,82 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
           </div>
         )}
 
+        {/* KYC Verification Required Card */}
+        {kycStatus !== 'approved' && (userRole === 'resident' || userRole === 'unverified') && (
+          <Card className="p-6 border border-white/10 dark:border-white/5 bg-card/40 backdrop-blur-md shadow-2xl relative overflow-hidden mb-8">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <Shield className="h-6 w-6 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Identity Verification Required</h2>
+                  <p className="text-muted-foreground text-xs">
+                    Please submit a valid government ID to verify your residency in {estate.name}.
+                  </p>
+                </div>
+              </div>
+
+              {kycStatus === 'rejected' && (
+                <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1">
+                  <p className="font-bold">KYC Submission Rejected</p>
+                  <p className="text-muted-foreground"><strong>Reason:</strong> {kycRejectionReason || 'No reason provided.'}</p>
+                  <p className="font-semibold text-foreground mt-1">Please re-upload a clear, valid identity document below.</p>
+                </div>
+              )}
+
+              {kycStatus === 'pending' ? (
+                <div className="p-6 rounded-xl bg-primary/5 border border-primary/15 text-center space-y-3">
+                  <Clock className="h-10 w-10 text-amber-500 mx-auto animate-spin" />
+                  <h3 className="font-bold text-foreground">Verification Pending</h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed max-w-md mx-auto">
+                    Your document ({kycDocType?.toUpperCase()}) has been submitted and is currently being reviewed by your estate administrator. Dashboard features will unlock once approved.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleKycSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Type</label>
+                      <select
+                        value={selectedDocType}
+                        onChange={(e) => setSelectedDocType(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card/85 p-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="nin">National Identity Number (NIN)</option>
+                        <option value="passport">International Passport</option>
+                        <option value="drivers_license">Driver&apos;s License</option>
+                        <option value="voters_card">Voter&apos;s Card</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Image URL</label>
+                      <input
+                        type="text"
+                        value={selectedDocUrl}
+                        onChange={(e) => setSelectedDocUrl(e.target.value)}
+                        placeholder="Paste image link or use default dummy"
+                        className="w-full rounded-xl border border-input bg-card/85 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {kycMsg && (
+                    <p className="text-xs font-medium text-primary mt-1">{kycMsg}</p>
+                  )}
+
+                  <Button type="submit" disabled={submittingKyc} className="w-full font-semibold rounded-xl">
+                    {submittingKyc ? 'Submitting...' : 'Upload & Submit for Verification'}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Main Resident Dashboard Actions */}
@@ -284,23 +415,29 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                 { icon: Users, color: 'bg-amber-500/10 text-amber-500', title: 'Guest Codes', desc: 'Generate secure passcodes for your visitors.', href: '/visitors' },
                 { icon: MessageSquare, color: 'bg-cyan-500/10 text-cyan-500', title: 'Community Chat', desc: 'Chat live with your verified neighbors.', href: '/chat' },
                 { icon: FileText, color: 'bg-rose-500/10 text-rose-500', title: 'Support Tickets', desc: 'File complaints for estate management.', href: '/support' },
-              ].map((item) => (
-                <Card key={item.title} className="p-5 card-lift group hover:border-primary transition-all">
-                  <div className={`h-11 w-11 rounded-xl ${item.color} flex items-center justify-center mb-3`}>
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
-                  <p className="text-muted-foreground text-xs leading-relaxed mb-3">
-                    {item.desc}
-                  </p>
-                  <Link
-                    href={estate.subscription_status === 'active' ? item.href : '#'}
-                    className="inline-flex items-center text-primary text-xs font-semibold hover:underline gap-1"
-                  >
-                    Open <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Card>
-              ))}
+              ].map((item) => {
+                const isLocked = kycStatus !== 'approved' && (userRole === 'resident' || userRole === 'unverified');
+                return (
+                  <Card key={item.title} className={`p-5 card-lift group hover:border-primary transition-all relative overflow-hidden ${isLocked ? 'opacity-40 cursor-not-allowed select-none' : ''}`}>
+                    <div className={`h-11 w-11 rounded-xl ${item.color} flex items-center justify-center mb-3`}>
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-foreground">{item.title}</h3>
+                      {isLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                    </div>
+                    <p className="text-muted-foreground text-xs leading-relaxed mb-3">
+                      {item.desc}
+                    </p>
+                    <Link
+                      href={(!isLocked && estate.subscription_status === 'active') ? item.href : '#'}
+                      className={`inline-flex items-center text-primary text-xs font-semibold hover:underline gap-1 ${isLocked ? 'pointer-events-none' : ''}`}
+                    >
+                      Open {!isLocked && <ArrowRight className="h-3.5 w-3.5" />}
+                    </Link>
+                  </Card>
+                )
+              })}
 
             </div>
           </div>

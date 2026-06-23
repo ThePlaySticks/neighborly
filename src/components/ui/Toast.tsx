@@ -71,6 +71,11 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [mounted, setMounted] = useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -93,7 +98,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     info: (message, description) => addToast({ message, description, variant: 'info' }),
   }
 
-  const portal = typeof document !== 'undefined'
+  const portal = mounted && typeof document !== 'undefined'
     ? createPortal(
         <div id="toast-portal">
           {toasts.map((t) => (

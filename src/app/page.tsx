@@ -26,11 +26,14 @@ export default function SaaSProductLanding() {
       <Navbar />
 
       {/* ===================== HERO SECTION ===================== */}
-      <section className="relative overflow-hidden py-24 lg:py-40 bg-background">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--color-primary-500)/0.05,transparent_50%)] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <section className="relative overflow-hidden py-24 lg:py-40 bg-background flex items-center min-h-[85vh]">
+        {/* Background Image with Blurry Glassmorphic Overlay */}
+        <div className="absolute inset-0 z-0 bg-cover bg-center opacity-25 dark:opacity-20" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&auto=format&fit=crop&q=80')" }} />
+        <div className="absolute inset-0 z-1 bg-gradient-to-b from-background/95 via-background/80 to-background backdrop-blur-[3px]" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="text-center max-w-4xl mx-auto space-y-8">
-            <div className="animate-fade-in">
+            <div className="animate-fade-in hover:scale-102 transition-all duration-300">
               <Badge
                 variant="success"
                 className="px-4 py-1.5 text-xs font-semibold rounded-full uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
@@ -39,22 +42,22 @@ export default function SaaSProductLanding() {
               </Badge>
             </div>
 
-            <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-foreground leading-[1.05]">
+            <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-foreground leading-[1.05] animate-slide-up">
               Personalized Portals for <span className="text-primary bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">Every Estate</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto animate-fade-in">
               Provide your residents with a secure, private community space. Get a dedicated subdomain website for notice boards, marketplaces, security alerts, and utility billing.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2 animate-fade-in">
               <Link href="/signup">
-                <Button size="lg" className="font-semibold px-8 shadow-lg shadow-primary/20 rounded-xl">
+                <Button size="lg" className="font-semibold px-8 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all duration-300 rounded-xl">
                   Register Your Estate <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <a href="#features">
-                <Button size="lg" variant="outline" className="font-semibold px-8 rounded-xl">
+                <Button size="lg" variant="outline" className="font-semibold px-8 hover:-translate-y-0.5 active:scale-95 transition-all duration-300 rounded-xl">
                   Explore Features
                 </Button>
               </a>
@@ -214,52 +217,119 @@ export default function SaaSProductLanding() {
               Only estate administrators pay a flat yearly subscription. Residents join and use the portal completely free!
             </p>
           </div>
-
-          <div className="max-w-md mx-auto">
-            <Card className="p-8 border-2 border-primary relative overflow-hidden bg-card shadow-2xl">
-              <div className="absolute top-0 right-0 bg-primary text-white text-[10px] uppercase font-bold tracking-wider px-3 py-1 rounded-bl-lg">
-                Estate Package
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Starter Plan */}
+            <Card className="p-8 border border-border bg-card/60 backdrop-blur-md shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-extrabold text-foreground text-xl">Annual Admin License</h4>
-                  <p className="text-xs text-muted-foreground mt-1">For estate management committees &amp; admins</p>
+                  <h4 className="font-extrabold text-foreground text-xl">Starter Plan</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Best for small residential communities</p>
                 </div>
-
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-5xl font-black text-foreground">₦150,000</span>
-                  <span className="text-muted-foreground text-sm font-semibold">/ year</span>
+                  <span className="text-4xl font-black text-foreground">₦150,000</span>
+                  <span className="text-muted-foreground text-xs font-semibold">/ year</span>
                 </div>
-
-                <ul className="space-y-3.5 text-sm text-foreground">
+                <ul className="space-y-3 text-xs text-foreground">
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                     <span>Dedicated subdomain website URL</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary shrink-0" />
-                    <span>Unlimited resident approvals</span>
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Up to 300 resident accounts</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary shrink-0" />
-                    <span>Notice board &amp; levy collection tools</span>
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Notice board & buy/sell marketplace</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary shrink-0" />
-                    <span>Private estate marketplace</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4.5 w-4.5 text-primary shrink-0" />
-                    <span>1.5% markup applied to transaction payments</span>
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Artisan & service provider directory</span>
                   </li>
                 </ul>
-
-                <Link href="/signup">
-                  <Button className="w-full font-bold py-6 rounded-xl mt-4">
-                    Register Your Gated Estate
-                  </Button>
-                </Link>
               </div>
+              <Link href="/signup" className="mt-6 block">
+                <Button className="w-full font-semibold rounded-xl text-xs">
+                  Register Starter Estate
+                </Button>
+              </Link>
+            </Card>
+
+            {/* Professional Plan */}
+            <Card className="p-8 border-2 border-primary bg-card/85 backdrop-blur-md shadow-2xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute top-0 right-0 bg-primary text-white text-[9px] uppercase font-bold tracking-wider px-3 py-1 rounded-bl-lg">
+                Popular
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-extrabold text-foreground text-xl">Professional Plan</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Best for medium-sized active estates</p>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-black text-foreground">₦300,000</span>
+                  <span className="text-muted-foreground text-xs font-semibold">/ year</span>
+                </div>
+                <ul className="space-y-3 text-xs text-foreground">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Everything in Starter included</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Up to 1,500 resident accounts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Community chat & support tickets</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Visitor / guest access codes</span>
+                  </li>
+                </ul>
+              </div>
+              <Link href="/signup" className="mt-6 block">
+                <Button className="w-full font-semibold rounded-xl text-xs shadow-lg shadow-primary/20">
+                  Register Pro Estate
+                </Button>
+              </Link>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card className="p-8 border border-border bg-card/60 backdrop-blur-md shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-extrabold text-foreground text-xl">Enterprise Plan</h4>
+                  <p className="text-xs text-muted-foreground mt-1">For large and premium developments</p>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-black text-foreground">₦500,000</span>
+                  <span className="text-muted-foreground text-xs font-semibold">/ year</span>
+                </div>
+                <ul className="space-y-3 text-xs text-foreground">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Everything in Pro included</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Unlimited resident & staff accounts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Optional custom domains (yourestate.com)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>White-label branding & API access</span>
+                  </li>
+                </ul>
+              </div>
+              <Link href="/signup" className="mt-6 block">
+                <Button className="w-full font-semibold rounded-xl text-xs">
+                  Contact Sales / Onboard
+                </Button>
+              </Link>
             </Card>
           </div>
         </div>

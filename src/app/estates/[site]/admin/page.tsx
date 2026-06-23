@@ -14,6 +14,10 @@ interface Resident {
   id: string
   full_name: string
   role: string
+  kyc_status?: string
+  kyc_document_type?: string
+  kyc_document_url?: string
+  kyc_rejection_reason?: string
 }
 
 interface Estate {
@@ -22,6 +26,7 @@ interface Estate {
   subdomain: string
   subscription_status: string
   subscription_expires_at: string
+  subscription_plan: string
   yearly_fee: number | null
   markup_percent: number | null
 }
@@ -52,6 +57,11 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
   const [actioningId, setActioningId] = useState<string | null>(null)
   const [brandingMsg, setBrandingMsg] = useState('')
 
+  // KYC Verification states
+  const [zoomedImgUrl, setZoomedImgUrl] = useState<string | null>(null)
+  const [rejectingResidentId, setRejectingResidentId] = useState<string | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -68,7 +78,7 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
           // Fetch residents belonging to this estate
           const { data: residentsData } = await supabase
             .from('profiles')
-            .select('id, full_name, role')
+            .select('id, full_name, role, kyc_status, kyc_document_type, kyc_document_url, kyc_rejection_reason')
             .eq('estate_id', estateData.id)
 
           if (residentsData) {
@@ -174,12 +184,16 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: 'resident' })
+        .update({
+          kyc_status: 'approved',
+          role: 'resident',
+          kyc_rejection_reason: null
+        })
         .eq('id', residentId)
       
       if (error) throw error
 
-      setResidents(residents.map(r => r.id === residentId ? { ...r, role: 'resident' } : r))
+      setResidents(residents.map(r => r.id === residentId ? { ...r, role: 'resident', kyc_status: 'approved', kyc_rejection_reason: undefined } : r))
     } catch (err) {
       console.error('Failed to approve resident:', err)
     } finally {
@@ -187,19 +201,26 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     }
   }
 
-  const handleRejectResident = async (residentId: string) => {
+  const handleRejectResident = async (residentId: string, reason: string) => {
     setActioningId(residentId)
     try {
+      if (!reason) throw new Error('Please provide a reason for rejection')
       const { error } = await supabase
         .from('profiles')
-        .update({ estate_id: null, role: 'unverified' })
+        .update({
+          kyc_status: 'rejected',
+          kyc_rejection_reason: reason
+        })
         .eq('id', residentId)
 
       if (error) throw error
 
-      setResidents(residents.filter(r => r.id !== residentId))
-    } catch (err) {
+      setResidents(residents.map(r => r.id === residentId ? { ...r, kyc_status: 'rejected', kyc_rejection_reason: reason } : r))
+      setRejectingResidentId(null)
+      setRejectionReason('')
+    } catch (err: any) {
       console.error('Failed to reject resident:', err)
+      alert(err.message || 'Failed to reject resident')
     } finally {
       setActioningId(null)
     }
@@ -232,9 +253,8 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
     )
   }
 
-  const pendingResidents = residents.filter(r => r.role === 'unverified' || r.role === 'resident' && false) // adjust filter if needed
-  // let's define resident verification status correctly
-  const activeResidents = residents.filter(r => r.role === 'resident' || r.role === 'estate_admin')
+  const pendingResidents = residents.filter(r => r.kyc_status === 'pending' || r.kyc_status === 'rejected')
+  const activeResidents = residents.filter(r => r.kyc_status === 'approved' || r.role === 'estate_admin')
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -300,6 +320,13 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                   </div>
 
                   <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Plan Tier</span>
+                    <Badge variant="default" className="capitalize font-bold text-xs">
+                      {estate.subscription_plan || 'Starter'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Expires On</span>
                     <span className="text-sm font-bold text-foreground">
                       {new Date(estate.subscription_expires_at).toLocaleDateString()}
@@ -329,42 +356,105 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
               
               {activeTab === 'residents' && (
                 <>
-                  {/* Pending Approvals */}
+                  {/* Pending KYC Submissions */}
                   <Card className="p-6">
                     <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
                       <div className="flex items-center gap-2">
                         <Clock className="h-5 w-5 text-amber-500" />
-                        <h3 className="font-bold text-foreground text-lg">Pending Resident Approvals</h3>
+                        <h3 className="font-bold text-foreground text-lg">KYC Resident Submissions</h3>
                       </div>
-                      <Badge variant="warning">{pendingResidents.length} Pending</Badge>
+                      <Badge variant="warning">{pendingResidents.length} Pending/Rejected</Badge>
                     </div>
 
                     {pendingResidents.length === 0 ? (
-                      <p className="text-muted-foreground text-sm py-4">No residents are waiting for approval.</p>
+                      <p className="text-muted-foreground text-sm py-4">No residents are waiting for verification.</p>
                     ) : (
                       <div className="divide-y divide-border/60">
                         {pendingResidents.map(resident => (
-                          <div key={resident.id} className="flex items-center justify-between py-3">
-                            <span className="font-semibold text-foreground">{resident.full_name}</span>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleApproveResident(resident.id)}
-                                disabled={actioningId === resident.id}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRejectResident(resident.id)}
-                                disabled={actioningId === resident.id}
-                                className="text-red-500 hover:bg-red-500 hover:text-white border-red-500/30 rounded-lg px-3 py-1"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
+                          <div key={resident.id} className="py-4 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                {resident.kyc_document_url ? (
+                                  <img
+                                    src={resident.kyc_document_url}
+                                    alt="KYC Credential"
+                                    onClick={() => setZoomedImgUrl(resident.kyc_document_url || null)}
+                                    className="h-10 w-16 object-cover rounded-lg border border-border cursor-zoom-in hover:brightness-90 transition-all shrink-0"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-16 bg-muted rounded-lg flex items-center justify-center border border-border text-[10px] text-muted-foreground italic shrink-0">
+                                    No ID
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-foreground text-sm">{resident.full_name}</p>
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 capitalize mt-0.5">
+                                    Document: <strong>{resident.kyc_document_type || 'unspecified'}</strong>
+                                    <span>•</span>
+                                    Status: 
+                                    <span className={resident.kyc_status === 'rejected' ? 'text-red-500 font-bold' : 'text-amber-500 font-bold'}>
+                                      {resident.kyc_status}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {rejectingResidentId !== resident.id && (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApproveResident(resident.id)}
+                                    disabled={actioningId === resident.id}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1 flex items-center gap-1"
+                                  >
+                                    <Check className="h-4 w-4" /> Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setRejectingResidentId(resident.id)}
+                                    disabled={actioningId === resident.id}
+                                    className="text-red-500 hover:bg-red-500 hover:text-white border-red-500/30 rounded-lg px-3 py-1 flex items-center gap-1"
+                                  >
+                                    <X className="h-4 w-4" /> Reject
+                                  </Button>
+                                </div>
+                              )}
                             </div>
+
+                            {rejectingResidentId === resident.id && (
+                              <div className="bg-muted/30 p-3 rounded-xl border border-border space-y-2 animate-fade-in max-w-md">
+                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
+                                  Rejection Reason
+                                </label>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. ID details do not match profile name"
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    className="flex-1 rounded-xl border border-input bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                    required
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleRejectResident(resident.id, rejectionReason)}
+                                    disabled={actioningId === resident.id}
+                                    className="bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold"
+                                  >
+                                    Submit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => { setRejectingResidentId(null); setRejectionReason(''); }}
+                                    className="rounded-lg text-xs"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -388,9 +478,13 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                         {activeResidents.map(resident => (
                           <div key={resident.id} className="flex items-center justify-between py-3">
                             <span className="font-medium text-foreground">{resident.full_name}</span>
-                            <Badge variant={resident.role === 'estate_admin' ? 'success' : 'default'}>
-                              {resident.role}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              {resident.role === 'estate_admin' ? (
+                                <Badge variant="success">Estate Admin</Badge>
+                              ) : (
+                                <Badge variant="default">Verified Resident</Badge>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -476,6 +570,35 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
         </div>
       </main>
+
+      {/* Zoom Modal for KYC Documents */}
+      {zoomedImgUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setZoomedImgUrl(null)}
+        >
+          <div 
+            className="relative max-w-3xl w-full max-h-[90vh] bg-card rounded-2xl p-2 border border-border shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute right-4 top-4 z-10 bg-background/80 hover:bg-background rounded-full p-2 h-9 w-9"
+              onClick={() => setZoomedImgUrl(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+              <img
+                src={zoomedImgUrl}
+                alt="Enlarged KYC Credential"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

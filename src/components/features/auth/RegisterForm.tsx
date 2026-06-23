@@ -36,6 +36,13 @@ export function RegisterForm() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // OTP flow states
+  const [showOtpScreen, setShowOtpScreen] = useState(false)
+  const [otpToken, setOtpToken] = useState('')
+  const [otpError, setOtpError] = useState<string | null>(null)
+  const [otpVerifying, setOtpVerifying] = useState(false)
+  const [otpSuccess, setOtpSuccess] = useState(false)
+
   // 1. Detect subdomain client-side and fetch estates
   useEffect(() => {
     async function initRegisterForm() {
@@ -129,7 +136,8 @@ export function RegisterForm() {
         }
       }
 
-      setSuccess(true)
+      // Show OTP verification screen instead of simple success screen
+      setShowOtpScreen(true)
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration')
     } finally {
@@ -137,21 +145,90 @@ export function RegisterForm() {
     }
   }
 
-  if (success) {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setOtpError(null)
+    setOtpVerifying(true)
+
+    try {
+      if (otpToken.length !== 6) {
+        throw new Error('Please enter a valid 6-digit code')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpToken,
+        type: 'signup'
+      })
+
+      if (verifyError) throw verifyError
+
+      setOtpSuccess(true)
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
+    } catch (err: any) {
+      setOtpError(err.message || 'OTP verification failed. Please try again.')
+    } finally {
+      setOtpVerifying(false)
+    }
+  }
+
+  if (showOtpScreen) {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-primary font-black">Check your email</CardTitle>
-          <CardDescription>
-            We have sent a verification link to <strong className="text-foreground">{email}</strong>. Please check your inbox and verify your account.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex justify-center">
-          <Link href="/login">
-            <Button className="font-semibold rounded-xl">Back to Sign In</Button>
-          </Link>
-        </CardFooter>
-      </Card>
+      <form onSubmit={handleVerifyOtp} className="w-full max-w-md mx-auto">
+        <Card className="shadow-2xl border border-border bg-card/60 backdrop-blur-md">
+          <CardHeader className="text-center space-y-2">
+            <CardTitle className="text-2xl font-black text-foreground">Verify Account</CardTitle>
+            <CardDescription className="text-sm">
+              We sent a 6-digit OTP code to <strong className="text-foreground">{email}</strong>. Enter the code below to verify your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {otpError && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl border border-destructive/20 font-medium">
+                {otpError}
+              </div>
+            )}
+            {otpSuccess && (
+              <div className="bg-emerald-500/10 text-emerald-600 text-sm p-3 rounded-xl border border-emerald-500/20 font-medium text-center">
+                Email verified successfully! Redirecting...
+              </div>
+            )}
+            
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OTP Verification Code</label>
+              <input
+                type="text"
+                placeholder="000000"
+                maxLength={6}
+                value={otpToken}
+                onChange={(e) => setOtpToken(e.target.value.replace(/[^0-9]/g, ''))}
+                className="w-full text-center tracking-[0.75em] text-2xl font-bold rounded-xl border border-input bg-card/80 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button
+              type="submit"
+              disabled={otpVerifying || otpSuccess}
+              className="w-full font-semibold rounded-xl"
+            >
+              {otpVerifying ? 'Verifying...' : 'Verify OTP Code'}
+            </Button>
+            <div className="text-center text-xs text-muted-foreground">
+              Didn&apos;t get the code?{' '}
+              <button
+                type="button"
+                onClick={handleRegister}
+                className="text-primary font-semibold hover:underline bg-transparent border-0 cursor-pointer"
+              >
+                Resend Code
+              </button>
+            </div>
+          </CardFooter>
+        </Card>
+      </form>
     )
   }
 

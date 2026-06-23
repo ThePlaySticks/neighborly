@@ -23,12 +23,13 @@ CREATE TABLE IF NOT EXISTS public.estates (
     admin_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     subscription_status text NOT NULL DEFAULT 'active', -- 'active', 'suspended', 'unpaid'
     subscription_expires_at timestamp with time zone NOT NULL DEFAULT (now() + interval '1 year'),
+    subscription_plan text NOT NULL DEFAULT 'starter', -- 'starter', 'professional', 'enterprise'
     yearly_fee numeric, -- Custom fee overrides if set, otherwise defaults to super_admin_settings
     markup_percent numeric, -- Custom markup overrides if set, otherwise defaults to super_admin_settings
     created_at timestamp with time zone DEFAULT now()
 );
 
--- 3. Profiles Table (Link to Estates and Roles)
+-- 3. Profiles Table (Link to Estates, Roles, and KYC)
 -- Note: Assuming public.profiles already exists; we add column if it doesn't.
 DO $$
 BEGIN
@@ -37,6 +38,18 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='role') THEN
         ALTER TABLE public.profiles ADD COLUMN role text DEFAULT 'resident';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='kyc_status') THEN
+        ALTER TABLE public.profiles ADD COLUMN kyc_status text DEFAULT 'unuploaded';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='kyc_document_type') THEN
+        ALTER TABLE public.profiles ADD COLUMN kyc_document_type text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='kyc_document_url') THEN
+        ALTER TABLE public.profiles ADD COLUMN kyc_document_url text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='kyc_rejection_reason') THEN
+        ALTER TABLE public.profiles ADD COLUMN kyc_rejection_reason text;
     END IF;
 END $$;
 
