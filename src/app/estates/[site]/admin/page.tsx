@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/FormControls'
 import { Input } from '@/components/ui/Input'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle, Settings, Palette } from 'lucide-react'
+import { Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle, Settings, Palette, Plus, HelpCircle, Laptop, Smartphone, HardDrive, ShieldCheck } from 'lucide-react'
 
 interface Resident {
   id: string
@@ -29,6 +29,8 @@ interface Estate {
   subscription_plan: string
   yearly_fee: number | null
   markup_percent: number | null
+  addons?: string[]
+  promotional_discount?: number
 }
 
 interface Branding {
@@ -257,18 +259,22 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
   const activeResidents = residents.filter(r => r.kyc_status === 'approved' || r.role === 'estate_admin')
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative overflow-hidden bg-background">
+      {/* Animated Abstract Background blobs */}
+      <div className="absolute top-0 left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/8 blur-[120px] pointer-events-none animate-blob-1" />
+      <div className="absolute bottom-0 right-[-10%] w-[45vw] h-[45vw] rounded-full bg-secondary/6 blur-[100px] pointer-events-none animate-blob-2" />
+
       <Navbar />
 
-      <main className="flex-1 bg-muted/20 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <main className="flex-1 py-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 font-sans">
           
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card/45 backdrop-blur-md p-6 rounded-2xl border border-border/80 shadow-sm glass">
             <div>
               <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+                <Shield className="h-6 w-6 text-primary animate-pulse" />
+                <h1 className="text-3xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
                   {estate.name} Admin Portal
                 </h1>
               </div>
@@ -285,16 +291,16 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
           <div className="flex gap-2 border-b border-border pb-px">
             <button
               onClick={() => setActiveTab('residents')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
-                activeTab === 'residents' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all btn-interactive rounded-t-lg ${
+                activeTab === 'residents' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Resident Control
             </button>
             <button
               onClick={() => setActiveTab('customization')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${
-                activeTab === 'customization' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all btn-interactive rounded-t-lg ${
+                activeTab === 'customization' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               Estate CMS &amp; Branding
@@ -305,7 +311,7 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
             
             {/* Billing Column */}
             <div className="space-y-6">
-              <Card className="p-6">
+              <Card className="p-6 glass-card border border-border/60 shadow-lg">
                 <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
                   <CreditCard className="h-5 w-5 text-primary" />
                   <h3 className="font-bold text-foreground text-lg">Yearly Subscription</h3>
@@ -328,26 +334,117 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Expires On</span>
-                    <span className="text-sm font-bold text-foreground">
+                    <span className="text-xs font-bold text-foreground bg-muted px-2 py-1 rounded">
                       {new Date(estate.subscription_expires_at).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <div className="border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">Annual subscription fee</p>
-                    <p className="text-2xl font-black text-primary mt-1">
-                      ₦{estate.yearly_fee ? estate.yearly_fee.toLocaleString() : yearlyFee.toLocaleString()}
-                    </p>
+                  {/* Plan Features Quick Summary */}
+                  <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-2">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Active Plan Features</p>
+                    <ul className="space-y-1.5 text-xs text-foreground">
+                      {(!estate.subscription_plan || estate.subscription_plan.toLowerCase() === 'starter') && (
+                        <>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 300 residents</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 5 admins</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Local service directory</li>
+                        </>
+                      )}
+                      {(estate.subscription_plan?.toLowerCase() === 'professional') && (
+                        <>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 1,500 residents</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 20 admins</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Visitor &amp; Guest management</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Discussion chat groups</li>
+                        </>
+                      )}
+                      {(estate.subscription_plan?.toLowerCase() === 'enterprise') && (
+                        <>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Unlimited residents &amp; staff</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Custom Domain &amp; White-label</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Advanced workflows &amp; APIs</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Active Add-ons List */}
+                  {Array.isArray(estate.addons) && estate.addons.length > 0 && (
+                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 space-y-2">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary">Active Optional Paid Upgrades</p>
+                      <div className="space-y-1">
+                        {estate.addons.map(addonId => {
+                          const ADDONS_NAMES: Record<string, string> = {
+                            extra_storage: 'Additional Storage (10GB)',
+                            sms_notifications: 'SMS Notifications Block',
+                            priority_support: 'Premium 24/7 Support',
+                            onboarding_training: 'Dedicated Onboarding',
+                            custom_domain: 'Custom Domain Mapping'
+                          }
+                          return (
+                            <div key={addonId} className="flex justify-between items-center text-xs text-foreground font-semibold">
+                              <span className="flex items-center gap-1"><Plus className="h-3 w-3 text-primary" /> {ADDONS_NAMES[addonId] || addonId}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pricing breakdown */}
+                  <div className="border-t border-border/80 pt-4 space-y-1.5">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Price Calculation</p>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Base Plan Fee:</span>
+                      <span className="font-semibold text-foreground">₦{Number(estate.yearly_fee ? estate.yearly_fee : (PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee)).toLocaleString()}</span>
+                    </div>
+                    {Array.isArray(estate.addons) && estate.addons.length > 0 && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Paid Add-ons:</span>
+                        <span className="font-semibold text-foreground">
+                          + ₦{estate.addons.reduce((sum, addId) => {
+                            const ADDONS_PRICES: Record<string, number> = { extra_storage: 20000, sms_notifications: 15000, priority_support: 50000, onboarding_training: 35000, custom_domain: 25000 }
+                            return sum + (ADDONS_PRICES[addId] || 0)
+                          }, 0).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {Number(estate.promotional_discount || 0) > 0 && (
+                      <div className="flex justify-between text-xs text-emerald-600 font-bold">
+                        <span>Promo Rate Discount:</span>
+                        <span>- ₦{Number(estate.promotional_discount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-border/80 pt-2 flex items-baseline justify-between">
+                      <span className="text-xs font-extrabold text-foreground">Final Annual License:</span>
+                      <span className="text-xl font-black text-primary">
+                        ₦{(() => {
+                          const base = Number(estate.yearly_fee ? estate.yearly_fee : (PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee))
+                          const addonsSum = Array.isArray(estate.addons) ? estate.addons.reduce((sum, addId) => {
+                            const ADDONS_PRICES: Record<string, number> = { extra_storage: 20000, sms_notifications: 15000, priority_support: 50000, onboarding_training: 35000, custom_domain: 25000 }
+                            return sum + (ADDONS_PRICES[addId] || 0)
+                          }, 0) : 0
+                          const disc = Number(estate.promotional_discount || 0)
+                          return Math.max(0, base + addonsSum - disc).toLocaleString()
+                        })()}
+                      </span>
+                    </div>
                   </div>
 
                   <Button
                     onClick={handlePaySubscription}
                     disabled={paying || estate.subscription_status === 'active'}
-                    className="w-full font-semibold rounded-xl mt-2"
+                    className="w-full font-semibold rounded-xl mt-2 btn-interactive"
                   >
                     {paying ? 'Processing...' : estate.subscription_status === 'active' ? 'Subscription Active' : 'Renew Subscription'}
                   </Button>
                 </div>
+              </Card>
+
+              {/* Need Help Card */}
+              <Card className="p-5 glass-card border border-border/50 bg-primary/5 text-xs text-muted-foreground space-y-2">
+                <p className="font-bold text-foreground flex items-center gap-1 text-sm"><HelpCircle className="h-4 w-4 text-primary" /> Need to Upgrade or Add-on?</p>
+                <p className="leading-relaxed">Add-ons like SMS alerts, custom domains, or plan upgrades are configured via the Super Admin portal. Contact support to request additional features.</p>
               </Card>
             </div>
 

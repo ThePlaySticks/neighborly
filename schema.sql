@@ -6,13 +6,17 @@ CREATE TABLE IF NOT EXISTS public.super_admin_settings (
     id text PRIMARY KEY DEFAULT 'config',
     yearly_subscription_fee numeric NOT NULL DEFAULT 150000.00, -- Default annual subscription (NGN)
     markup_percent numeric NOT NULL DEFAULT 1.5, -- Default transaction markup percent (1.5%)
+    flat_service_fee numeric NOT NULL DEFAULT 100.00, -- Default flat fee per transaction/booking (NGN)
+    min_markup_limit numeric NOT NULL DEFAULT 50.00, -- Default minimum markup limit (NGN)
+    max_markup_limit numeric NOT NULL DEFAULT 5000.00, -- Default maximum markup limit (NGN)
+    renewal_policy text NOT NULL DEFAULT 'auto-renew', -- Default 'auto-renew' or 'manual'
     updated_at timestamp with time zone DEFAULT now(),
     CONSTRAINT singleton_row CHECK (id = 'config')
 );
 
 -- Insert default configurations if not exists
-INSERT INTO public.super_admin_settings (id, yearly_subscription_fee, markup_percent)
-VALUES ('config', 150000.00, 1.5)
+INSERT INTO public.super_admin_settings (id, yearly_subscription_fee, markup_percent, flat_service_fee, min_markup_limit, max_markup_limit, renewal_policy)
+VALUES ('config', 150000.00, 1.5, 100.00, 50.00, 5000.00, 'auto-renew')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Estates Table (Tenants)
@@ -26,6 +30,11 @@ CREATE TABLE IF NOT EXISTS public.estates (
     subscription_plan text NOT NULL DEFAULT 'starter', -- 'starter', 'professional', 'enterprise'
     yearly_fee numeric, -- Custom fee overrides if set, otherwise defaults to super_admin_settings
     markup_percent numeric, -- Custom markup overrides if set, otherwise defaults to super_admin_settings
+    flat_service_fee numeric, -- Custom flat service fee override if set
+    min_markup_limit numeric, -- Custom min markup override if set
+    max_markup_limit numeric, -- Custom max markup override if set
+    promotional_discount numeric NOT NULL DEFAULT 0.00, -- Custom promotional discount (flat amount)
+    addons jsonb NOT NULL DEFAULT '[]'::jsonb, -- Array of active add-on keys e.g., ["extra_storage", "sms_alerts"]
     created_at timestamp with time zone DEFAULT now()
 );
 
