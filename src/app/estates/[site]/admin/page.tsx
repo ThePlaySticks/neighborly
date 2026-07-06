@@ -2,13 +2,17 @@
 
 import React, { use, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/FormControls'
 import { Input } from '@/components/ui/Input'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle, Settings, Palette, Plus, HelpCircle, Laptop, Smartphone, HardDrive, ShieldCheck } from 'lucide-react'
+import {
+  Shield, Users, CreditCard, CheckCircle, Clock, Check, X, AlertTriangle,
+  Palette, Plus, HelpCircle, ShieldCheck, Home, Bell, MessageSquare
+} from 'lucide-react'
+import Link from 'next/link'
 
 interface Resident {
   id: string
@@ -52,8 +56,8 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
   const [estate, setEstate] = useState<Estate | null>(null)
   const [residents, setResidents] = useState<Resident[]>([])
   const [branding, setBranding] = useState<Branding>({
-    primary_color: '#10b981',
-    secondary_color: '#f59e0b',
+    primary_color: '#2563eb', // Default Cobalt Blue
+    secondary_color: '#64748b', // Default Slate Grey
     welcome_message: 'Welcome to our community portal'
   })
 
@@ -73,7 +77,6 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch Estate
         const { data: estateData } = await supabase
           .from('estates')
           .select('*')
@@ -83,7 +86,6 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
         if (estateData) {
           setEstate(estateData)
 
-          // Fetch residents belonging to this estate
           const { data: residentsData } = await supabase
             .from('profiles')
             .select('id, full_name, role, kyc_status, kyc_document_type, kyc_document_url, kyc_rejection_reason')
@@ -93,7 +95,6 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
             setResidents(residentsData)
           }
 
-          // Fetch branding details
           const { data: brandingData } = await supabase
             .from('tenant_branding')
             .select('*')
@@ -102,14 +103,13 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
           if (brandingData) {
             setBranding({
-              primary_color: brandingData.primary_color,
-              secondary_color: brandingData.secondary_color,
+              primary_color: brandingData.primary_color || '#2563eb',
+              secondary_color: brandingData.secondary_color || '#64748b',
               welcome_message: brandingData.welcome_message || ''
             })
           }
         }
 
-        // Fetch general system fee
         const { data: settingsData } = await supabase
           .from('super_admin_settings')
           .select('yearly_subscription_fee')
@@ -175,8 +175,7 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
         })
 
       if (error) throw error
-      setBrandingMsg('Branding customization saved successfully!')
-      // Refresh page client side to show updated CSS variables
+      setBrandingMsg('Branding settings saved successfully!')
       setTimeout(() => {
         window.location.reload()
       }, 1000)
@@ -236,12 +235,12 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-background">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center p-8 bg-background">
-          <div className="text-center space-y-4">
-            <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading Estate Admin Portal...</p>
+        <main className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-3">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground text-xs font-semibold">Loading Admin Dashboard...</p>
           </div>
         </main>
         <Footer />
@@ -251,10 +250,10 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
   if (!estate) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-background">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center p-8 bg-background">
-          <p className="text-muted-foreground text-sm">Estate configuration mismatch.</p>
+        <main className="flex-1 flex items-center justify-center p-8">
+          <p className="text-muted-foreground text-xs">Estate configuration mismatch.</p>
         </main>
         <Footer />
       </div>
@@ -266,30 +265,26 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden bg-background">
-      {/* Animated Abstract Background blobs */}
-      <div className="absolute top-0 left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/8 blur-[120px] pointer-events-none animate-blob-1" />
-      <div className="absolute bottom-0 right-[-10%] w-[45vw] h-[45vw] rounded-full bg-secondary/6 blur-[100px] pointer-events-none animate-blob-2" />
-
       <Navbar />
 
-      <main className="flex-1 py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 font-sans">
+      <main className="flex-1 py-8 relative z-10 pb-24 md:pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card/45 backdrop-blur-md p-6 rounded-2xl border border-border/80 shadow-sm glass">
+          {/* Header Card */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border/80 p-6 rounded-xl shadow-sm">
             <div>
               <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary animate-pulse" />
-                <h1 className="text-3xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
-                  {estate.name} Admin Portal
+                <Shield className="h-5 w-5 text-primary" style={{ strokeWidth: 2 }} />
+                <h1 className="text-xl font-bold tracking-tight text-foreground">
+                  {estate.name} Administrator Portal
                 </h1>
               </div>
-              <p className="text-muted-foreground text-sm mt-1">
-                Manage residents, configure notices, and pay your annual platform subscription.
+              <p className="text-muted-foreground text-xs mt-1">
+                Verify resident files, manage tenant branding styles, and renew yearly licenses.
               </p>
             </div>
-            <Badge variant="success" className="px-3 py-1 font-semibold text-xs rounded-full">
-              Subdomain Admin
+            <Badge variant="outline" className="px-3 py-1 font-bold text-[10px] rounded-full text-primary border-primary/20 bg-primary/5">
+              Portal Admin
             </Badge>
           </div>
 
@@ -297,19 +292,19 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
           <div className="flex gap-2 border-b border-border pb-px">
             <button
               onClick={() => setActiveTab('residents')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all btn-interactive rounded-t-lg ${
+              className={`px-4 py-2 text-xs font-bold border-b-2 transition-all btn-interactive rounded-t-lg cursor-pointer ${
                 activeTab === 'residents' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              Resident Control
+              Resident Credentials
             </button>
             <button
               onClick={() => setActiveTab('customization')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all btn-interactive rounded-t-lg ${
+              className={`px-4 py-2 text-xs font-bold border-b-2 transition-all btn-interactive rounded-t-lg cursor-pointer ${
                 activeTab === 'customization' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              Estate CMS &amp; Branding
+              Branding Settings
             </button>
           </div>
 
@@ -317,97 +312,45 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
             
             {/* Billing Column */}
             <div className="space-y-6">
-              <Card className="p-6 glass-card border border-border/60 shadow-lg">
-                <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-foreground text-lg">Yearly Subscription</h3>
+              <Card hoverEffect={false} className="p-6 border border-border/80 shadow-sm bg-card rounded-xl">
+                <div className="flex items-center gap-2 mb-4 border-b border-border/80 pb-3">
+                  <CreditCard className="h-4.5 w-4.5 text-primary" />
+                  <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Annual Dues</h3>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Status</span>
-                    <Badge variant={estate.subscription_status === 'active' ? 'success' : 'warning'}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant={estate.subscription_status === 'active' ? 'success' : 'warning'} className="text-[10px] font-bold">
                       {estate.subscription_status}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Plan Tier</span>
-                    <Badge variant="default" className="capitalize font-bold text-xs">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">License Tier</span>
+                    <Badge variant="outline" className="capitalize font-bold text-[10px] text-primary border-primary/20 bg-primary/5">
                       {estate.subscription_plan || 'Starter'}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Expires On</span>
-                    <span className="text-xs font-bold text-foreground bg-muted px-2 py-1 rounded">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Expiration Date</span>
+                    <span className="text-[10px] font-bold text-foreground bg-muted px-2 py-0.5 rounded border border-border/40 font-mono">
                       {new Date(estate.subscription_expires_at).toLocaleDateString()}
                     </span>
                   </div>
 
-                  {/* Plan Features Quick Summary */}
-                  <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-2">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Active Plan Features</p>
-                    <ul className="space-y-1.5 text-xs text-foreground">
-                      {(!estate.subscription_plan || estate.subscription_plan.toLowerCase() === 'starter') && (
-                        <>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 300 residents</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 5 admins</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Local service directory</li>
-                        </>
-                      )}
-                      {(estate.subscription_plan?.toLowerCase() === 'professional') && (
-                        <>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 1,500 residents</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Up to 20 admins</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Visitor &amp; Guest management</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Discussion chat groups</li>
-                        </>
-                      )}
-                      {(estate.subscription_plan?.toLowerCase() === 'enterprise') && (
-                        <>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Unlimited residents &amp; staff</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Custom Domain &amp; White-label</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> Advanced workflows &amp; APIs</li>
-                        </>
-                      )}
-                    </ul>
-                  </div>
-
-                  {/* Active Add-ons List */}
-                  {Array.isArray(estate.addons) && estate.addons.length > 0 && (
-                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 space-y-2">
-                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary">Active Optional Paid Upgrades</p>
-                      <div className="space-y-1">
-                        {estate.addons.map(addonId => {
-                          const ADDONS_NAMES: Record<string, string> = {
-                            extra_storage: 'Additional Storage (10GB)',
-                            sms_notifications: 'SMS Notifications Block',
-                            priority_support: 'Premium 24/7 Support',
-                            onboarding_training: 'Dedicated Onboarding',
-                            custom_domain: 'Custom Domain Mapping'
-                          }
-                          return (
-                            <div key={addonId} className="flex justify-between items-center text-xs text-foreground font-semibold">
-                              <span className="flex items-center gap-1"><Plus className="h-3 w-3 text-primary" /> {ADDONS_NAMES[addonId] || addonId}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Pricing breakdown */}
-                  <div className="border-t border-border/80 pt-4 space-y-1.5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Price Calculation</p>
+                  <div className="border-t border-border/80 pt-4 space-y-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Billing Summary</p>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Base Plan Fee:</span>
-                      <span className="font-semibold text-foreground">₦{Number(estate.yearly_fee ? estate.yearly_fee : (PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee)).toLocaleString()}</span>
+                      <span>Plan Rate:</span>
+                      <span className="font-bold text-foreground">₦{Number(estate.yearly_fee || PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee).toLocaleString()}</span>
                     </div>
                     {Array.isArray(estate.addons) && estate.addons.length > 0 && (
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Paid Add-ons:</span>
-                        <span className="font-semibold text-foreground">
+                        <span>Paid Modules:</span>
+                        <span className="font-bold text-foreground">
                           + ₦{estate.addons.reduce((sum, addId) => {
                             const ADDONS_PRICES: Record<string, number> = { extra_storage: 20000, sms_notifications: 15000, priority_support: 50000, onboarding_training: 35000, custom_domain: 25000 }
                             return sum + (ADDONS_PRICES[addId] || 0)
@@ -416,16 +359,16 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                       </div>
                     )}
                     {Number(estate.promotional_discount || 0) > 0 && (
-                      <div className="flex justify-between text-xs text-emerald-600 font-bold">
-                        <span>Promo Rate Discount:</span>
+                      <div className="flex justify-between text-xs text-primary font-bold">
+                        <span>Discounts:</span>
                         <span>- ₦{Number(estate.promotional_discount).toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="border-t border-border/80 pt-2 flex items-baseline justify-between">
-                      <span className="text-xs font-extrabold text-foreground">Final Annual License:</span>
-                      <span className="text-xl font-black text-primary">
+                    <div className="border-t border-border/80 pt-3 flex items-baseline justify-between">
+                      <span className="text-xs font-bold text-foreground">Total License Dues:</span>
+                      <span className="text-lg font-black text-primary">
                         ₦{(() => {
-                          const base = Number(estate.yearly_fee ? estate.yearly_fee : (PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee))
+                          const base = Number(estate.yearly_fee || PLAN_FEES[estate.subscription_plan?.toLowerCase() || 'starter'] || yearlyFee)
                           const addonsSum = Array.isArray(estate.addons) ? estate.addons.reduce((sum, addId) => {
                             const ADDONS_PRICES: Record<string, number> = { extra_storage: 20000, sms_notifications: 15000, priority_support: 50000, onboarding_training: 35000, custom_domain: 25000 }
                             return sum + (ADDONS_PRICES[addId] || 0)
@@ -440,62 +383,61 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                   <Button
                     onClick={handlePaySubscription}
                     disabled={paying || estate.subscription_status === 'active'}
-                    className="w-full font-semibold rounded-xl mt-2 btn-interactive"
+                    className="w-full font-semibold rounded-xl text-xs py-2 btn-interactive mt-2"
                   >
-                    {paying ? 'Processing...' : estate.subscription_status === 'active' ? 'Subscription Active' : 'Renew Subscription'}
+                    {paying ? 'Authorizing...' : estate.subscription_status === 'active' ? 'License Active' : 'Renew Subscription'}
                   </Button>
                 </div>
               </Card>
 
-              {/* Need Help Card */}
-              <Card className="p-5 glass-card border border-border/50 bg-primary/5 text-xs text-muted-foreground space-y-2">
-                <p className="font-bold text-foreground flex items-center gap-1 text-sm"><HelpCircle className="h-4 w-4 text-primary" /> Need to Upgrade or Add-on?</p>
-                <p className="leading-relaxed">Add-ons like SMS alerts, custom domains, or plan upgrades are configured via the Super Admin portal. Contact support to request additional features.</p>
+              <Card hoverEffect={false} className="p-5 border border-border/85 bg-primary/5 text-xs text-muted-foreground space-y-2">
+                <p className="font-bold text-foreground flex items-center gap-1 text-xs uppercase"><HelpCircle className="h-4 w-4 text-primary" /> Setup Custom Subdomains</p>
+                <p className="leading-relaxed text-[10px]">To map a custom domain (e.g. lekkiestate.com) or add premium system SMS notification blocks, please submit a request to the main super admin desk.</p>
               </Card>
             </div>
 
-            {/* Main Area */}
+            {/* Main Content Area */}
             <div className="lg:col-span-2 space-y-6">
               
               {activeTab === 'residents' && (
                 <>
                   {/* Pending KYC Submissions */}
-                  <Card className="p-6">
-                    <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                  <Card hoverEffect={false} className="p-6 border border-border/80 shadow-sm bg-card rounded-xl">
+                    <div className="flex items-center justify-between mb-4 border-b border-border/80 pb-3">
                       <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-amber-500" />
-                        <h3 className="font-bold text-foreground text-lg">KYC Resident Submissions</h3>
+                        <Clock className="h-4.5 w-4.5 text-primary" />
+                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">KYC Submissions</h3>
                       </div>
-                      <Badge variant="warning">{pendingResidents.length} Pending/Rejected</Badge>
+                      <Badge variant="warning" className="text-[10px] font-bold">{pendingResidents.length} Pending</Badge>
                     </div>
 
                     {pendingResidents.length === 0 ? (
-                      <p className="text-muted-foreground text-sm py-4">No residents are waiting for verification.</p>
+                      <p className="text-muted-foreground text-xs py-4 italic">No residents are waiting for verification approval.</p>
                     ) : (
-                      <div className="divide-y divide-border/60">
+                      <div className="divide-y divide-border/50">
                         {pendingResidents.map(resident => (
-                          <div key={resident.id} className="py-4 space-y-2">
+                          <div key={resident.id} className="py-4 first:pt-0 last:pb-0 space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
                                 {resident.kyc_document_url ? (
                                   <img
                                     src={resident.kyc_document_url}
-                                    alt="KYC Credential"
+                                    alt="KYC ID file"
                                     onClick={() => setZoomedImgUrl(resident.kyc_document_url || null)}
-                                    className="h-10 w-16 object-cover rounded-lg border border-border cursor-zoom-in hover:brightness-90 transition-all shrink-0"
+                                    className="h-10 w-16 object-cover rounded-lg border border-border/80 cursor-zoom-in hover:opacity-90 transition-all shrink-0"
                                   />
                                 ) : (
-                                  <div className="h-10 w-16 bg-muted rounded-lg flex items-center justify-center border border-border text-[10px] text-muted-foreground italic shrink-0">
-                                    No ID
+                                  <div className="h-10 w-16 bg-muted rounded-lg flex items-center justify-center border border-border text-[9px] text-muted-foreground italic shrink-0">
+                                    No File
                                   </div>
                                 )}
                                 <div>
                                   <p className="font-bold text-foreground text-sm">{resident.full_name}</p>
-                                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 capitalize mt-0.5">
-                                    Document: <strong>{resident.kyc_document_type || 'unspecified'}</strong>
+                                  <p className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5 capitalize">
+                                    Doc: <strong className="text-foreground">{resident.kyc_document_type || 'unspecified'}</strong>
                                     <span>•</span>
                                     Status: 
-                                    <span className={resident.kyc_status === 'rejected' ? 'text-red-500 font-bold' : 'text-amber-500 font-bold'}>
+                                    <span className={resident.kyc_status === 'rejected' ? 'text-destructive font-bold' : 'text-primary font-bold'}>
                                       {resident.kyc_status}
                                     </span>
                                   </p>
@@ -508,42 +450,42 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                                     size="sm"
                                     onClick={() => handleApproveResident(resident.id)}
                                     disabled={actioningId === resident.id}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 py-1 flex items-center gap-1"
+                                    className="bg-primary hover:bg-primary/95 text-white rounded-lg px-3 py-1 flex items-center gap-1 text-xs btn-interactive"
                                   >
-                                    <Check className="h-4 w-4" /> Approve
+                                    <Check className="h-3.5 w-3.5" /> Approve
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => setRejectingResidentId(resident.id)}
                                     disabled={actioningId === resident.id}
-                                    className="text-red-500 hover:bg-red-500 hover:text-white border-red-500/30 rounded-lg px-3 py-1 flex items-center gap-1"
+                                    className="text-destructive hover:bg-destructive hover:text-white border-destructive/20 rounded-lg px-3 py-1 flex items-center gap-1 text-xs btn-interactive"
                                   >
-                                    <X className="h-4 w-4" /> Reject
+                                    <X className="h-3.5 w-3.5" /> Reject
                                   </Button>
                                 </div>
                               )}
                             </div>
 
                             {rejectingResidentId === resident.id && (
-                              <div className="bg-muted/30 p-3 rounded-xl border border-border space-y-2 animate-fade-in max-w-md">
-                                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                                  Rejection Reason
+                              <div className="bg-muted/60 p-3 rounded-xl border border-border max-w-md space-y-2 animate-fade-in-scale">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-muted-foreground block">
+                                  Provide Rejection Reason
                                 </label>
                                 <div className="flex gap-2">
                                   <input
                                     type="text"
-                                    placeholder="e.g. ID details do not match profile name"
+                                    placeholder="e.g. ID blurry or names do not match"
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
-                                    className="flex-1 rounded-xl border border-input bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                    className="flex-1 rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
                                     required
                                   />
                                   <Button
                                     size="sm"
                                     onClick={() => handleRejectResident(resident.id, rejectionReason)}
                                     disabled={actioningId === resident.id}
-                                    className="bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold"
+                                    className="bg-destructive hover:bg-destructive/95 text-white rounded-lg text-xs font-semibold px-3"
                                   >
                                     Submit
                                   </Button>
@@ -551,7 +493,7 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                                     size="sm"
                                     variant="outline"
                                     onClick={() => { setRejectingResidentId(null); setRejectionReason(''); }}
-                                    className="rounded-lg text-xs"
+                                    className="rounded-lg text-xs px-3 border-border hover:bg-muted"
                                   >
                                     Cancel
                                   </Button>
@@ -564,28 +506,28 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
                     )}
                   </Card>
 
-                  {/* Active Residents list */}
-                  <Card className="p-6">
-                    <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                  {/* Verified Residents list */}
+                  <Card hoverEffect={false} className="p-6 border border-border/80 shadow-sm bg-card rounded-xl">
+                    <div className="flex items-center justify-between mb-4 border-b border-border/80 pb-3">
                       <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-foreground text-lg">Verified Residents</h3>
+                        <Users className="h-4.5 w-4.5 text-primary" />
+                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Verified Residents</h3>
                       </div>
-                      <Badge variant="default">{activeResidents.length} Total</Badge>
+                      <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/20 bg-primary/5">{activeResidents.length} Active</Badge>
                     </div>
 
                     {activeResidents.length === 0 ? (
-                      <p className="text-muted-foreground text-sm py-4">No verified residents in this estate.</p>
+                      <p className="text-muted-foreground text-xs py-4 italic">No verified residents are listed on this subdomain.</p>
                     ) : (
-                      <div className="divide-y divide-border/60">
+                      <div className="divide-y divide-border/40">
                         {activeResidents.map(resident => (
-                          <div key={resident.id} className="flex items-center justify-between py-3">
-                            <span className="font-medium text-foreground">{resident.full_name}</span>
+                          <div key={resident.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                            <span className="font-semibold text-foreground text-xs">{resident.full_name}</span>
                             <div className="flex items-center gap-2">
                               {resident.role === 'estate_admin' ? (
-                                <Badge variant="success">Estate Admin</Badge>
+                                <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-primary/5">Admin</Badge>
                               ) : (
-                                <Badge variant="default">Verified Resident</Badge>
+                                <Badge variant="outline" className="text-[9px] font-bold text-muted-foreground border-border bg-muted">Resident</Badge>
                               )}
                             </div>
                           </div>
@@ -597,71 +539,72 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
               )}
 
               {activeTab === 'customization' && (
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
-                    <Palette className="h-5 w-5 text-primary" />
-                    <h3 className="font-bold text-foreground text-lg">Branding &amp; Customization</h3>
+                <Card hoverEffect={false} className="p-6 border border-border/80 shadow-sm bg-card rounded-xl">
+                  <div className="flex items-center gap-2 mb-4 border-b border-border/80 pb-3">
+                    <Palette className="h-4.5 w-4.5 text-primary" />
+                    <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Branding &amp; Customization</h3>
                   </div>
 
-                  <form onSubmit={handleSaveBranding} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Primary Brand Color</label>
+                  <form onSubmit={handleSaveBranding} className="space-y-5">
+                    {/* Rule: Label ABOVE input, gap-2 inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Primary Brand Color</label>
                         <div className="flex gap-2">
                           <input
                             type="color"
                             value={branding.primary_color}
                             onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
-                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer"
+                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer shrink-0"
                           />
                           <input
                             type="text"
                             value={branding.primary_color}
                             onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })}
-                            className="flex-1 rounded-xl border border-input bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="flex-1 rounded-lg border border-input bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Secondary Brand Color</label>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Secondary Brand Color</label>
                         <div className="flex gap-2">
                           <input
                             type="color"
                             value={branding.secondary_color}
                             onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
-                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer"
+                            className="h-10 w-12 rounded-lg border border-border bg-card cursor-pointer shrink-0"
                           />
                           <input
                             type="text"
                             value={branding.secondary_color}
                             onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })}
-                            className="flex-1 rounded-xl border border-input bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="flex-1 rounded-lg border border-input bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Portal Welcome Message</label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Portal Welcome Message</label>
                       <textarea
                         rows={3}
                         value={branding.welcome_message}
                         onChange={(e) => setBranding({ ...branding, welcome_message: e.target.value })}
-                        className="w-full rounded-xl border border-input bg-card p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-lg border border-input bg-card p-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                         placeholder="Welcome residents to our gated community portal..."
                       />
                     </div>
 
                     {brandingMsg && (
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-1.5 animate-fade-in">
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs flex items-center gap-1.5 animate-fade-in-scale">
                         <CheckCircle className="h-4 w-4 shrink-0" />
                         <span>{brandingMsg}</span>
                       </div>
                     )}
 
-                    <Button type="submit" disabled={savingBranding} className="w-full font-semibold rounded-xl">
-                      {savingBranding ? 'Saving...' : 'Save Branding Changes'}
+                    <Button type="submit" disabled={savingBranding} className="w-full font-semibold rounded-xl text-xs py-2 btn-interactive">
+                      {savingBranding ? 'Saving Settings...' : 'Save Branding Changes'}
                     </Button>
                   </form>
                 </Card>
@@ -674,34 +617,54 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
         </div>
       </main>
 
-      {/* Zoom Modal for KYC Documents */}
+      {/* Zoom Modal for KYC Documents (Clean Spring Scale and Blur backdrop) */}
       {zoomedImgUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in"
           onClick={() => setZoomedImgUrl(null)}
         >
           <div 
-            className="relative max-w-3xl w-full max-h-[90vh] bg-card rounded-2xl p-2 border border-border shadow-2xl overflow-hidden flex flex-col"
+            className="relative max-w-2xl w-full bg-card rounded-xl p-2 border border-border shadow-lg overflow-hidden flex flex-col animate-fade-in-scale"
             onClick={(e) => e.stopPropagation()}
           >
             <Button
               variant="outline"
               size="sm"
-              className="absolute right-4 top-4 z-10 bg-background/80 hover:bg-background rounded-full p-2 h-9 w-9"
+              className="absolute right-4 top-4 z-10 bg-background/80 hover:bg-background rounded-full p-2 h-8 w-8"
               onClick={() => setZoomedImgUrl(null)}
             >
-              <X className="h-4 w-4" />
+              <X className="h-4.5 w-4.5" />
             </Button>
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+            <div className="flex-1 overflow-auto flex items-center justify-center p-3">
               <img
                 src={zoomedImgUrl}
-                alt="Enlarged KYC Credential"
-                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+                alt="KYC ID preview"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
               />
             </div>
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Tab Bar (Sticky navigation, only visible on mobile < md) */}
+      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-md border border-border/80 rounded-2xl shadow-lg p-2.5 flex justify-around items-center">
+        <Link href={`/estates/${site}`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+          <Home className="h-4 w-4" style={{ strokeWidth: 2 }} />
+          <span className="text-[9px] font-bold">Portal</span>
+        </Link>
+        <Link href={`/estates/${site}/admin`} className="flex flex-col items-center gap-0.5 text-primary">
+          <Shield className="h-4 w-4" style={{ strokeWidth: 2 }} />
+          <span className="text-[9px] font-bold font-bold">Admin</span>
+        </Link>
+        <Link href={`/estates/${site}/notices`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+          <Bell className="h-4 w-4" style={{ strokeWidth: 2 }} />
+          <span className="text-[9px] font-bold">Notices</span>
+        </Link>
+        <Link href={`/estates/${site}/chat`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+          <MessageSquare className="h-4 w-4" style={{ strokeWidth: 2 }} />
+          <span className="text-[9px] font-bold">Chat</span>
+        </Link>
+      </div>
 
       <Footer />
     </div>

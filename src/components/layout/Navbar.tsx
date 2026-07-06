@@ -15,7 +15,6 @@ export function Navbar() {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname
-      // Full list of root domain hostnames (no port)
       const rootDomains = [
         'localhost',
         'neighborly.ng',
@@ -23,13 +22,11 @@ export function Navbar() {
         'neighborly-zeta.vercel.app',
         'neighborly-gamma.vercel.app',
       ]
-      // If the hostname exactly matches any root domain, it's NOT a subdomain
       const isRoot = rootDomains.includes(hostname)
       setIsSubdomain(!isRoot)
     }
   }, [])
 
-  // Links for the main SaaS product landing page (root domain)
   const mainLinks = [
     { label: 'Features', href: '#features' },
     { label: 'How It Works', href: '#how-it-works' },
@@ -37,7 +34,6 @@ export function Navbar() {
     { label: 'Contact', href: '#contact' },
   ]
 
-  // Links for residents on a specific estate subdomain
   const subdomainLinks = [
     { label: 'Portal Home', href: '/' },
     { label: 'Notices', href: '/notices' },
@@ -54,21 +50,21 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <span className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          <span className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-black text-base shadow-sm">
             N
           </span>
-          <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
-            {isSubdomain ? 'Neighborly' : 'Neighborly'}
+          <span className="text-xl font-bold tracking-tight text-foreground">
+            Neighborly
           </span>
         </Link>
 
-        {/* Desktop Nav Links */}
+        {/* Desktop Nav Links - Single Line (Height Cap compliant) */}
         <nav className="hidden md:flex items-center space-x-6">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
               {link.label}
             </Link>
@@ -76,44 +72,44 @@ export function Navbar() {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-3">
           {/* Theme Selector */}
           <div className="relative">
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 rounded-lg btn-interactive"
               onClick={() => setShowThemeDropdown(!showThemeDropdown)}
             >
               {theme === 'light' ? (
-                <Sun className="h-4 w-4 text-amber-500" />
+                <Sun className="h-4 w-4 text-primary" />
               ) : theme === 'dark' ? (
-                <Moon className="h-4 w-4 text-emerald-400" />
+                <Moon className="h-4 w-4 text-primary" />
               ) : (
-                <Laptop className="h-4 w-4" />
+                <Laptop className="h-4 w-4 text-muted-foreground" />
               )}
             </Button>
             {showThemeDropdown && (
-              <div className="absolute right-0 mt-2 w-32 rounded-md border border-border bg-card shadow-lg ring-1 ring-black/5 p-1">
+              <div className="absolute right-0 mt-2 w-32 rounded-lg border border-border bg-card shadow-md p-1 z-50 animate-fade-in-scale">
                 <button
                   onClick={() => { setTheme('light'); setShowThemeDropdown(false) }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-medium rounded hover:bg-muted flex items-center space-x-2 text-foreground"
+                  className="w-full text-left px-3 py-1.5 text-xs font-semibold rounded-md hover:bg-muted flex items-center space-x-2 text-foreground cursor-pointer"
                 >
-                  <Sun className="h-3 w-3 text-amber-500" />
+                  <Sun className="h-3.5 w-3.5 text-primary" />
                   <span>Light</span>
                 </button>
                 <button
                   onClick={() => { setTheme('dark'); setShowThemeDropdown(false) }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-medium rounded hover:bg-muted flex items-center space-x-2 text-foreground"
+                  className="w-full text-left px-3 py-1.5 text-xs font-semibold rounded-md hover:bg-muted flex items-center space-x-2 text-foreground cursor-pointer"
                 >
-                  <Moon className="h-3 w-3 text-emerald-400" />
+                  <Moon className="h-3.5 w-3.5 text-primary" />
                   <span>Dark</span>
                 </button>
                 <button
                   onClick={() => { setTheme('system'); setShowThemeDropdown(false) }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-medium rounded hover:bg-muted flex items-center space-x-2 text-foreground"
+                  className="w-full text-left px-3 py-1.5 text-xs font-semibold rounded-md hover:bg-muted flex items-center space-x-2 text-foreground cursor-pointer"
                 >
-                  <Laptop className="h-3 w-3" />
+                  <Laptop className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>System</span>
                 </button>
               </div>
@@ -123,19 +119,19 @@ export function Navbar() {
           {isSubdomain ? (
             <>
               <Link href="/visitors">
-                <Button variant="outline" size="sm" className="font-semibold">Guest Codes</Button>
+                <Button variant="outline" size="sm" className="font-semibold rounded-xl btn-interactive text-xs">Guest Codes</Button>
               </Link>
               <Link href="/login">
-                <Button size="sm" className="font-semibold">Sign In</Button>
+                <Button size="sm" className="font-semibold rounded-xl btn-interactive text-xs">Sign In</Button>
               </Link>
             </>
           ) : (
             <>
               <Link href="/login">
-                <Button variant="outline" size="sm" className="font-semibold">Sign In</Button>
+                <Button variant="outline" size="sm" className="font-semibold rounded-xl btn-interactive text-xs">Sign In</Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm" className="font-semibold">Register Estate</Button>
+                <Button size="sm" className="font-semibold rounded-xl btn-interactive text-xs">Register Estate</Button>
               </Link>
             </>
           )}
@@ -146,19 +142,19 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 p-0 rounded-lg btn-interactive"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
             {theme === 'dark' ? (
-              <Sun className="h-4 w-4 text-amber-500" />
+              <Sun className="h-4 w-4 text-primary" />
             ) : (
-              <Moon className="h-4 w-4 text-emerald-400" />
+              <Moon className="h-4 w-4 text-primary" />
             )}
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 p-0 rounded-lg btn-interactive"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -168,34 +164,34 @@ export function Navbar() {
 
       {/* Mobile Menu Panel */}
       {isOpen && (
-        <div className="md:hidden border-t border-border bg-card px-4 pt-2 pb-4 space-y-2">
+        <div className="md:hidden border-t border-border bg-card px-4 pt-2 pb-4 space-y-1.5 animate-slide-down">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-muted"
+              className="block px-3 py-2 rounded-lg text-sm font-semibold text-foreground hover:bg-muted"
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-4 border-t border-border flex flex-col space-y-2">
+          <div className="pt-3 border-t border-border flex flex-col space-y-2">
             {isSubdomain ? (
               <>
                 <Link href="/visitors" onClick={() => setIsOpen(false)} className="w-full">
-                  <Button variant="outline" className="w-full">Guest Codes</Button>
+                  <Button variant="outline" className="w-full rounded-xl py-2.5 text-xs font-semibold">Guest Codes</Button>
                 </Link>
                 <Link href="/login" onClick={() => setIsOpen(false)} className="w-full">
-                  <Button className="w-full">Sign In</Button>
+                  <Button className="w-full rounded-xl py-2.5 text-xs font-semibold">Sign In</Button>
                 </Link>
               </>
             ) : (
               <>
                 <Link href="/login" onClick={() => setIsOpen(false)} className="w-full">
-                  <Button variant="outline" className="w-full">Sign In</Button>
+                  <Button variant="outline" className="w-full rounded-xl py-2.5 text-xs font-semibold">Sign In</Button>
                 </Link>
                 <Link href="/signup" onClick={() => setIsOpen(false)} className="w-full">
-                  <Button className="w-full">Register Estate</Button>
+                  <Button className="w-full rounded-xl py-2.5 text-xs font-semibold">Register Estate</Button>
                 </Link>
               </>
             )}
