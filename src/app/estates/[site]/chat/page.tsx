@@ -70,7 +70,7 @@ export default function CommunityChat({ params }: { params: Promise<{ site: stri
                   table: 'estate_messages',
                   filter: `estate_id=eq.${profile.estate_id}`
                 },
-                (payload) => {
+                (payload: any) => {
                   setMessages((prev) => [...prev, payload.new as Message])
                 }
               )
