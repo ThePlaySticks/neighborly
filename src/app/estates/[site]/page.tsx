@@ -9,7 +9,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import {
   Shield, Bell, ShoppingBag, AlertTriangle, Users, MapPin, Wrench, ArrowRight,
-  MessageSquare, FileText, Key, LogIn, UserPlus, Lock, Zap, Clock, Home
+  MessageSquare, FileText, Key, LogIn, UserPlus, Lock, Zap, Clock, Home, Upload
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -180,7 +180,7 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         <Navbar />
 
         {/* Hero */}
-        <section className="relative overflow-hidden py-16 sm:py-24 bg-mesh-light dark:bg-mesh-dark">
+        <section className="relative overflow-hidden py-16 sm:py-24 bg-mesh-light bg-mesh-auto">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
             <div>
               <Badge variant="outline" className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider text-primary border-primary/20 bg-primary/5">
@@ -346,15 +346,36 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Document Image URL</label>
-                      <input
-                        type="text"
-                        value={selectedDocUrl}
-                        onChange={(e) => setSelectedDocUrl(e.target.value)}
-                        placeholder="Image URL link"
-                        className="w-full rounded-lg border border-input bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
-                        required
-                      />
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Document Image</label>
+                      <div className="relative border-2 border-dashed border-border hover:border-primary/50 transition-all rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-muted/30">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setSelectedDocUrl(reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          required={!selectedDocUrl}
+                        />
+                        {selectedDocUrl ? (
+                          <div className="text-center space-y-1">
+                            <p className="text-[10px] text-primary font-bold">✓ Document Selected</p>
+                            <span className="text-[9px] text-muted-foreground truncate max-w-[150px] block">Image loaded successfully</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-[9px] text-muted-foreground text-center">Drag &amp; drop or click to upload ID photo</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -386,7 +407,8 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                 { icon: MessageSquare, color: 'text-primary bg-primary/5 border border-primary/10', title: 'Community Chat', desc: 'Real-time neighbor messaging.', href: '/chat' },
                 { icon: FileText, color: 'text-primary bg-primary/5 border border-primary/10', title: 'Support Tickets', desc: 'File utility complaints.', href: '/support' },
               ].map((item) => {
-                const isLocked = kycStatus !== 'approved' && (userRole === 'resident' || userRole === 'unverified');
+                // Notice Board is unlocked for everyone to see estate updates immediately
+                const isLocked = item.title !== 'Notice Board' && kycStatus !== 'approved' && (userRole === 'resident' || userRole === 'unverified');
                 return (
                   <Card key={item.title} hoverEffect={false} className={`p-5 card-lift border border-border/80 relative overflow-hidden ${isLocked ? 'opacity-40 cursor-not-allowed select-none' : 'cursor-pointer'}`}>
                     <div className={`h-9 w-9 rounded-xl ${item.color} flex items-center justify-center mb-3`}>

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-07-06T12:33:40.470Z",
+  "version": "1.0.0",
+  "tables": {
+    "super_admin_settings": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "estates": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "profiles": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "tenant_branding": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "announcements": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "marketplace_items": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "visitor_logs": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "support_tickets": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    },
+    "estate_messages": {
+      "status": "failed",
+      "error": "TypeError: fetch failed"
+    }
+  }
+}

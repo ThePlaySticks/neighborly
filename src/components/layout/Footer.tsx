@@ -17,7 +17,7 @@ export function Footer() {
               <span className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg">
                 N
               </span>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold tracking-tight text-foreground">
                 Neighborly
               </span>
             </Link>

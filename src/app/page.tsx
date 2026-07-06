@@ -65,9 +65,9 @@ export default function SaaSProductLanding() {
 
       {/* ===================== HERO SECTION ===================== */}
       {/* Viewport stability: min-h-[100dvh], Hero top padding cap: pt-20 */}
-      <section className="relative overflow-hidden pt-20 pb-20 flex items-center min-h-[100dvh] bg-mesh-light dark:bg-mesh-dark">
+      <section className="relative overflow-hidden pt-20 pb-20 flex items-center min-h-[100dvh] bg-mesh-light bg-mesh-auto">
         {/* Subtle grid pattern overlay */}
-        <div className="absolute inset-0 z-0 opacity-[0.02] dark:opacity-[0.03] pointer-events-none"
+        <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none"
           style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, var(--foreground) 1px, transparent 0)`,
             backgroundSize: '32px 32px'
@@ -115,9 +115,9 @@ export default function SaaSProductLanding() {
             <div className="pt-8 max-w-md mx-auto reveal" style={{ transitionDelay: '320ms' }}>
               <div className="glass rounded-xl p-3.5 shadow-sm border border-border/60 flex items-center gap-3">
                 <div className="flex gap-1.5 shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700" />
+                  <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  <div className="h-2 w-2 rounded-full bg-slate-300" />
                 </div>
                 <div className="flex-1 bg-muted/60 rounded-lg py-1.5 px-3 text-xs text-muted-foreground font-mono flex items-center justify-between border border-border/30">
                   <span>https://<strong className="text-primary font-bold">your-estate</strong>.neighborly.ng</span>
@@ -130,7 +130,7 @@ export default function SaaSProductLanding() {
       </section>
 
       {/* ===================== FEATURES SECTION (Bento Grid) ===================== */}
-      <section id="features" className="relative py-24 border-t border-border/40">
+      <section id="features" className="relative py-16 sm:py-24 border-t border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={featuresRef}>
           <div className="text-center space-y-3 mb-16">
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
@@ -146,7 +146,7 @@ export default function SaaSProductLanding() {
             
             {/* Card 1: Personalized Subdomain (col-span-2, light tint background) */}
             <div className="md:col-span-2 reveal-scale">
-              <Card className="p-8 h-full bg-primary/5 border-primary/10 hover:border-primary/30 flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full bg-primary/5 border-primary/10 hover:border-primary/30 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                     <Globe className="h-5 w-5" />
@@ -170,7 +170,7 @@ export default function SaaSProductLanding() {
 
             {/* Card 2: Isolation (col-span-1) */}
             <div className="reveal-scale">
-              <Card className="p-8 h-full flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
                     <Shield className="h-5 w-5" />
@@ -191,7 +191,7 @@ export default function SaaSProductLanding() {
 
             {/* Card 3: Levies (col-span-1) */}
             <div className="reveal-scale">
-              <Card className="p-8 h-full flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
                     <CreditCard className="h-5 w-5" />
@@ -212,7 +212,7 @@ export default function SaaSProductLanding() {
 
             {/* Card 4: Panic System (col-span-2, Dark Drenched block) */}
             <div className="md:col-span-2 reveal-scale">
-              <Card className="p-8 h-full bg-slate-950 text-slate-100 border-slate-800 flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full bg-slate-950 text-slate-100 border-slate-800 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
                     <AlertTriangle className="h-5 w-5" />
@@ -238,7 +238,7 @@ export default function SaaSProductLanding() {
 
             {/* Card 5: Broadcast Notice (col-span-1) */}
             <div className="reveal-scale">
-              <Card className="p-8 h-full flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
                     <Bell className="h-5 w-5" />
@@ -251,15 +251,15 @@ export default function SaaSProductLanding() {
                   </div>
                 </div>
                 <div className="mt-6 space-y-1.5">
-                  <div className="h-1.5 w-3/4 bg-slate-200 dark:bg-slate-800 rounded" />
-                  <div className="h-1.5 w-1/2 bg-slate-200 dark:bg-slate-800 rounded" />
+                  <div className="h-1.5 w-3/4 bg-muted rounded" />
+                  <div className="h-1.5 w-1/2 bg-muted rounded" />
                 </div>
               </Card>
             </div>
 
             {/* Card 6: Local Marketplace (col-span-2, Accent tint background) */}
             <div className="md:col-span-2 reveal-scale">
-              <Card className="p-8 h-full bg-accent/5 border-accent/10 hover:border-accent/30 flex flex-col justify-between hoverEffect={false}">
+              <Card hoverEffect={false} className="p-8 h-full bg-accent/5 border-accent/10 hover:border-accent/30 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
                     <ShoppingBag className="h-5 w-5" />
@@ -272,7 +272,7 @@ export default function SaaSProductLanding() {
                   </div>
                 </div>
                 <div className="mt-8 bg-card border border-border/80 rounded-xl p-3 flex items-center gap-3 max-w-sm shadow-sm">
-                  <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center text-[10px] font-bold text-muted-foreground">IMG</div>
+                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center text-[10px] font-bold text-muted-foreground">IMG</div>
                   <div className="flex-1">
                     <p className="text-xs font-bold text-foreground">Ergonomic Office Chair</p>
                     <p className="text-[9px] text-muted-foreground">Lekki Gate A • Verified Resident</p>
@@ -286,7 +286,7 @@ export default function SaaSProductLanding() {
       </section>
 
       {/* ===================== HOW IT WORKS ===================== */}
-      <section id="how-it-works" className="relative py-24 border-t border-border/40">
+      <section id="how-it-works" className="relative py-16 sm:py-24 border-t border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={stepsRef}>
           <div className="text-center space-y-3 mb-16">
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
@@ -297,7 +297,7 @@ export default function SaaSProductLanding() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             {[
               { step: '1', title: 'Create Admin Account', desc: 'Register as an Estate Admin, provide your development name, and claim your subdomain.' },
               { step: '2', title: 'Invite Residents', desc: 'Share your custom portal URL (e.g. lekki.neighborly.ng/signup) to onboard your community.' },
@@ -317,7 +317,7 @@ export default function SaaSProductLanding() {
 
       {/* ===================== PRICING SECTION ===================== */}
       {/* Overhauled pricing cards: no ghost-card shadows, Cobalt styling */}
-      <section id="pricing" className="relative py-24 border-t border-border/40 bg-mesh-light dark:bg-mesh-dark">
+      <section id="pricing" className="relative py-16 sm:py-24 border-t border-border/40 bg-mesh-light bg-mesh-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={pricingRef}>
           <div className="text-center space-y-3 mb-16">
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
@@ -425,9 +425,9 @@ export default function SaaSProductLanding() {
 
       {/* ===================== CONTACT SECTION ===================== */}
       {/* Forms overhaul: label ABOVE input, gap-2 inputs */}
-      <section id="contact" className="relative py-24 border-t border-border/40">
+      <section id="contact" className="relative py-16 sm:py-24 border-t border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={contactRef}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16">
             <div className="space-y-8">
               <div className="space-y-4">
                 <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
