@@ -210,24 +210,24 @@ export default function SaaSProductLanding() {
               </Card>
             </div>
 
-            {/* Card 4: Panic System (col-span-2, Dark Drenched block) */}
+            {/* Card 4: Panic System (col-span-2) */}
             <div className="md:col-span-2 reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full bg-slate-950 text-slate-100 border-slate-800 flex flex-col justify-between">
+              <Card hoverEffect={false} className="p-8 h-full border border-border flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl text-slate-100">Security Alerts &amp; Panic Trigger</h3>
-                    <p className="text-sm text-slate-400 leading-relaxed mt-2 max-w-md">
+                    <h3 className="font-bold text-xl text-foreground">Security Alerts &amp; Panic Trigger</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 max-w-md">
                       Instantly alert gate security officers and neighbors in a crisis. The one-tap panic button triggers real-time warning logs for nearby residents.
                     </p>
                   </div>
                 </div>
-                <div className="mt-8 flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-3 max-w-md">
+                <div className="mt-8 flex items-center justify-between bg-muted border border-border/80 rounded-xl p-3 max-w-md">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs text-slate-400 font-mono">Panic broadcast active</span>
+                    <span className="text-xs text-muted-foreground font-mono">Panic broadcast active</span>
                   </div>
                   <button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer">
                     Test Trigger
