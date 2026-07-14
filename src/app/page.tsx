@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import {
   Shield, CreditCard, Bell, ShoppingBag, AlertTriangle,
-  ArrowRight, CheckCircle, DollarSign, Globe, MapPin, Mail, Phone, Send,
-  Zap, Lock, ChevronDown, Check
+  ArrowRight, CheckCircle, MapPin, Mail, Phone, Send,
+  Lock, ChevronDown, Check, Home, Users, Briefcase, Sparkles, LogIn
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -13,59 +14,158 @@ import { Badge } from '@/components/ui/FormControls'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 
-// Scroll reveal IntersectionObserver hook (fallback if Motion is still installing)
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-          }
-        })
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    )
-
-    const revealElements = el.querySelectorAll('.reveal, .reveal-scale')
-    revealElements.forEach((child) => observer.observe(child))
-    if (el.classList.contains('reveal') || el.classList.contains('reveal-scale')) {
-      observer.observe(el)
-    }
-
-    return () => observer.disconnect()
-  }, [])
-
-  return ref
+interface Estate {
+  id: string
+  name: string
+  subdomain: string
 }
 
-export default function SaaSProductLanding() {
+export default function NextdoorLandingPage() {
+  const supabase = createClient()
+
+  // Form inputs
   const [email, setEmail] = useState('')
-  const [demoRequested, setDemoRequested] = useState(false)
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [role, setRole] = useState<'resident' | 'estate_admin'>('resident') // Tenant vs Landlord/Admin
+  
+  // Estate listings
+  const [estates, setEstates] = useState<Estate[]>([])
+  const [selectedEstateId, setSelectedEstateId] = useState('')
+  
+  // Estate Admin details
+  const [newEstateName, setNewEstateName] = useState('')
+  const [newEstateSubdomain, setNewEstateSubdomain] = useState('')
 
-  const heroRef = useScrollReveal()
-  const featuresRef = useScrollReveal()
-  const stepsRef = useScrollReveal()
-  const pricingRef = useScrollReveal()
-  const contactRef = useScrollReveal()
+  // State flags
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showOtpScreen, setShowOtpScreen] = useState(false)
+  const [otpToken, setOtpToken] = useState('')
+  const [otpError, setOtpError] = useState<string | null>(null)
+  const [otpVerifying, setOtpVerifying] = useState(false)
+  const [otpSuccess, setOtpSuccess] = useState(false)
 
-  const handleDemoSubmit = (e: React.FormEvent) => {
+  // Fetch estates on mount
+  useEffect(() => {
+    async function fetchEstates() {
+      try {
+        const { data } = await supabase
+          .from('estates')
+          .select('id, name, subdomain')
+        if (data) {
+          setEstates(data)
+        }
+      } catch (err) {
+        console.error('Failed to load estates:', err)
+      }
+    }
+    fetchEstates()
+  }, [])
+
+  // Handle Sign-Up Submission
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setDemoRequested(true)
+    setError(null)
+    setLoading(true)
+
+    try {
+      if (role === 'resident' && !selectedEstateId) {
+        throw new Error('Please select an estate to join')
+      }
+      if (role === 'estate_admin' && (!newEstateName || !newEstateSubdomain)) {
+        throw new Error('Please enter both estate name and desired subdomain')
+      }
+
+      // 1. Sign up user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            estate_id: role === 'resident' ? selectedEstateId : null,
+          },
+        },
+      })
+
+      if (signUpError) throw signUpError
+
+      const userId = signUpData.user?.id
+      if (!userId) throw new Error('Registration failed, no user ID returned')
+
+      // 2. Create estate if registering as admin/landlord
+      if (role === 'estate_admin') {
+        const { data: estateData, error: estateError } = await supabase
+          .from('estates')
+          .insert({
+            name: newEstateName,
+            subdomain: newEstateSubdomain.toLowerCase().trim(),
+            admin_id: userId,
+            subscription_status: 'active'
+          })
+          .select()
+          .single()
+
+        if (estateError) throw estateError
+
+        if (estateData) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ estate_id: estateData.id })
+            .eq('id', userId)
+          
+          if (profileError) throw profileError
+        }
+      }
+
+      setShowOtpScreen(true)
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle OTP Verification
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setOtpError(null)
+    setOtpVerifying(true)
+
+    try {
+      if (otpToken.length !== 6) {
+        throw new Error('Please enter a valid 6-digit code')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: otpToken,
+        type: 'signup'
+      })
+
+      if (verifyError) throw verifyError
+
+      setOtpSuccess(true)
+      setTimeout(() => {
+        window.location.href = role === 'estate_admin' 
+          ? `/estates/${newEstateSubdomain}/admin` 
+          : `/login`
+      }, 1500)
+    } catch (err: any) {
+      setOtpError(err.message || 'OTP verification failed. Please try again.')
+    } finally {
+      setOtpVerifying(false)
+    }
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Navbar />
 
-      {/* ===================== HERO SECTION ===================== */}
-      {/* Viewport stability: min-h-[100dvh], Hero top padding cap: pt-20 */}
-      <section className="relative overflow-hidden pt-20 pb-20 flex items-center min-h-[100dvh] bg-mesh-light bg-mesh-auto">
+      {/* ===================== NEXTDOOR CO-BRANDED HERO / SIGNUP SPLIT LAYOUT ===================== */}
+      <main className="flex-1 flex items-center bg-mesh-light bg-mesh-auto py-12 md:py-20 relative overflow-hidden">
         {/* Subtle grid pattern overlay */}
         <div className="absolute inset-0 z-0 opacity-[0.02] pointer-events-none"
           style={{
@@ -74,436 +174,270 @@ export default function SaaSProductLanding() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full" ref={heroRef}>
-          {/* Content stack has exactly 4 elements to avoid layout clutter */}
-          <div className="text-center max-w-4xl mx-auto space-y-6">
-            {/* Element 1: Hero Eyebrow (Limit: 1 eyebrow per 3 sections) */}
-            <div className="reveal" style={{ transitionDelay: '0ms' }}>
-              <Badge
-                variant="outline"
-                className="px-4 py-1.5 text-xs font-semibold rounded-full border-border/80 bg-card text-primary shadow-sm"
-              >
-                🇳🇬 Built for modern Gated Communities &amp; Estates in Nigeria
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+            
+            {/* Left Side: Pitch Copy & Testimonial Mockup (Nextdoor Style) */}
+            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
+              <Badge variant="outline" className="px-4 py-1.5 text-xs font-semibold rounded-full border-primary/20 bg-primary/5 text-primary shadow-sm inline-flex">
+                🇳🇬 Gated Estates Social Platform
               </Badge>
-            </div>
+              <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground leading-[1.08]">
+                Discover your estate. <span className="text-primary">Connect with verified neighbors.</span>
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Neighborly is the trusted private network for gated communities in Nigeria. Find local trades, generate visitor gate passcodes, pay estate levies, and stay updated on important security notices.
+              </p>
 
-            {/* Element 2: Headline (Strictly 2 lines, no gradient text) */}
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight text-foreground leading-[1.05] reveal" style={{ transitionDelay: '80ms' }}>
-              Personalized Portals for <span className="text-primary">Every Estate</span>
-            </h1>
-
-            {/* Element 3: Subtext (Max 20 words) */}
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto reveal" style={{ transitionDelay: '160ms' }}>
-              Secure private subdomains for notice boards, community marketplaces, visitor gate passes, and automated levy billing.
-            </p>
-
-            {/* Element 4: CTAs (1 primary, 1 secondary) */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full sm:w-auto max-w-md mx-auto reveal" style={{ transitionDelay: '240ms' }}>
-              <Link href="/signup" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto btn-interactive font-semibold px-8 shadow-sm rounded-xl text-sm justify-center py-6">
-                  Register Your Estate <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <a href="#features" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto btn-interactive font-semibold px-8 rounded-xl text-sm border-border hover:bg-muted justify-center py-6">
-                  Explore Features
-                </Button>
-              </a>
-            </div>
-
-            {/* Premium browser URL representation - replacing low-fidelity details */}
-            <div className="pt-8 max-w-md mx-auto reveal" style={{ transitionDelay: '320ms' }}>
-              <div className="glass rounded-xl p-3.5 shadow-sm border border-border/60 flex items-center gap-3">
-                <div className="flex gap-1.5 shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-slate-300" />
-                  <div className="h-2 w-2 rounded-full bg-slate-300" />
-                  <div className="h-2 w-2 rounded-full bg-slate-300" />
-                </div>
-                <div className="flex-1 bg-muted/60 rounded-lg py-1.5 px-3 text-xs text-muted-foreground font-mono flex items-center justify-between border border-border/30">
-                  <span>https://<strong className="text-primary font-bold">your-estate</strong>.neighborly.ng</span>
-                  <Lock className="h-3 w-3 text-primary shrink-0" />
+              {/* Graphical representation/Mockup of local community interactions */}
+              <div className="pt-6 hidden sm:block">
+                <div className="glass rounded-2xl p-4 shadow-md border border-border/60 max-w-lg mx-auto lg:mx-0">
+                  <div className="flex items-center gap-3 border-b border-border/40 pb-3 mb-3">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs text-muted-foreground font-mono">Banana Island Estate Activity Feed</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0">A</div>
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Alhaji Bello <span className="text-[10px] text-muted-foreground font-medium">• Gate A</span></p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Generator maintenance scheduled for Tuesday from 10 AM to 2 PM. Plan accordingly!</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-6 w-6 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-[10px] shrink-0">C</div>
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Chinedu Okafor <span className="text-[10px] text-muted-foreground font-medium">• Block 4</span></p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Anyone got recommendations for a reliable electrician in Lekki? Need assistance with inverter setup.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ===================== FEATURES SECTION (Bento Grid) ===================== */}
-      <section id="features" className="relative py-16 sm:py-24 border-t border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={featuresRef}>
-          <div className="text-center space-y-3 mb-16">
-            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
-              Everything Needed to Run a Gated Community
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-sm reveal" style={{ transitionDelay: '80ms' }}>
-              Each estate gets an isolated database row, notice boards, local trades, and visitor validation.
-            </p>
-          </div>
-
-          {/* Rhythmic Bento Grid (Varied sizes and drenching, replacing identical card grids) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 reveal-stagger">
-            
-            {/* Card 1: Personalized Subdomain (col-span-2, light tint background) */}
-            <div className="md:col-span-2 reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full bg-primary/5 border-primary/10 hover:border-primary/30 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Globe className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Dedicated Subdomains</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 max-w-md">
-                      Set up an estate-specific site (e.g., lekki-gardens.neighborly.ng). Residents verify their identity, pay dues, and stay updated inside a private space.
-                    </p>
-                  </div>
-                </div>
+            {/* Right Side: Nextdoor-Style Signup Card */}
+            <div className="lg:col-span-6 flex justify-center w-full">
+              <Card className="w-full max-w-md shadow-2xl border border-border bg-card p-6 sm:p-8 space-y-6">
                 
-                {/* Visual mock search field */}
-                <div className="mt-8 bg-card border border-border/80 rounded-xl p-3 shadow-sm flex items-center gap-3 max-w-sm">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs text-muted-foreground font-mono flex-1">banana-island.neighborly.ng</span>
-                  <Check className="h-4 w-4 text-primary" />
-                </div>
-              </Card>
-            </div>
-
-            {/* Card 2: Isolation (col-span-1) */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Strict Database Isolation</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                      Row-level tenant isolation ensures residents from Estate A can never access Estate B logs, support requests, or visitor records.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 flex items-center gap-1.5 text-xs text-primary font-semibold">
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>RLS Security Locked</span>
-                </div>
-              </Card>
-            </div>
-
-            {/* Card 3: Levies (col-span-1) */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
-                    <CreditCard className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Levies &amp; Utility Billing</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                      Automate security fees, power tokens, and waste levies. Residents pay online with fast cards or local bank transfers.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 bg-muted/60 border border-border/30 rounded-xl p-3 flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground font-medium">Monthly Security</span>
-                  <span className="font-bold text-foreground">₦10,000 / month</span>
-                </div>
-              </Card>
-            </div>
-
-            {/* Card 4: Panic System (col-span-2) */}
-            <div className="md:col-span-2 reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full border border-border flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Security Alerts &amp; Panic Trigger</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 max-w-md">
-                      Instantly alert gate security officers and neighbors in a crisis. The one-tap panic button triggers real-time warning logs for nearby residents.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-8 flex items-center justify-between bg-muted border border-border/80 rounded-xl p-3 max-w-md">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-xs text-muted-foreground font-mono">Panic broadcast active</span>
-                  </div>
-                  <button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg active:scale-95 transition-all cursor-pointer">
-                    Test Trigger
-                  </button>
-                </div>
-              </Card>
-            </div>
-
-            {/* Card 5: Broadcast Notice (col-span-1) */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
-                    <Bell className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Notice Broadcast Board</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                      Broadcast bulletins, electrical maintenance outages, or emergency alerts immediately to resident notifications.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 space-y-1.5">
-                  <div className="h-1.5 w-3/4 bg-muted rounded" />
-                  <div className="h-1.5 w-1/2 bg-muted rounded" />
-                </div>
-              </Card>
-            </div>
-
-            {/* Card 6: Local Marketplace (col-span-2, Accent tint background) */}
-            <div className="md:col-span-2 reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full bg-accent/5 border-accent/10 hover:border-accent/30 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="h-10 w-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
-                    <ShoppingBag className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-foreground">Private Local Marketplace</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-2 max-w-md">
-                      Verified members can trade furniture, vehicles, or items safely within the physical confines of the estate community.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-8 bg-card border border-border/80 rounded-xl p-3 flex items-center gap-3 max-w-sm shadow-sm">
-                  <div className="h-8 w-8 bg-muted rounded flex items-center justify-center text-[10px] font-bold text-muted-foreground">IMG</div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-foreground">Ergonomic Office Chair</p>
-                    <p className="text-[9px] text-muted-foreground">Lekki Gate A • Verified Resident</p>
-                  </div>
-                  <span className="text-xs font-extrabold text-primary">₦45,000</span>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== HOW IT WORKS ===================== */}
-      <section id="how-it-works" className="relative py-16 sm:py-24 border-t border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={stepsRef}>
-          <div className="text-center space-y-3 mb-16">
-            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
-              Set Up Your Estate in 3 Steps
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-sm reveal" style={{ transitionDelay: '80ms' }}>
-              Transition your resident management online in under five minutes.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {[
-              { step: '1', title: 'Create Admin Account', desc: 'Register as an Estate Admin, provide your development name, and claim your subdomain.' },
-              { step: '2', title: 'Invite Residents', desc: 'Share your custom portal URL (e.g. lekki.neighborly.ng/signup) to onboard your community.' },
-              { step: '3', title: 'Verify & Manage', desc: 'Approve resident KYC documentation, publish announcements, and configure bills.' },
-            ].map((item, i) => (
-              <div key={item.step} className="reveal text-center space-y-4 relative z-10" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground font-black text-lg mx-auto flex items-center justify-center shadow-sm">
-                  {item.step}
-                </div>
-                <h3 className="font-bold text-foreground text-lg">{item.title}</h3>
-                <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== PRICING SECTION ===================== */}
-      {/* Overhauled pricing cards: no ghost-card shadows, Cobalt styling */}
-      <section id="pricing" className="relative py-16 sm:py-24 border-t border-border/40 bg-mesh-light bg-mesh-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={pricingRef}>
-          <div className="text-center space-y-3 mb-16">
-            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-sm reveal" style={{ transitionDelay: '80ms' }}>
-              Only estate administrators pay a flat yearly subscription fee. Resident accounts are always free.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto reveal-stagger">
-            
-            {/* Starter Plan */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between border border-border shadow-sm rounded-xl">
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-bold text-foreground text-xl">Starter</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Best for small residential communities</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold text-foreground">₦150,000</span>
-                    <span className="text-muted-foreground text-xs font-semibold">/ year</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-foreground/80">
-                    {['Dedicated subdomain URL', 'Up to 300 resident accounts', 'Notice board & local marketplace', 'Artisan & directory listings'].map(item => (
-                      <li key={item} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Link href="/signup" className="mt-8 block">
-                  <Button variant="outline" className="w-full font-semibold rounded-xl btn-interactive text-sm">
-                    Get Started
-                  </Button>
-                </Link>
-              </Card>
-            </div>
-
-            {/* Professional Plan — solid border accent */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between border-2 border-primary shadow-sm rounded-xl relative bg-card">
-                <div className="absolute top-0 right-0 bg-primary text-white text-[9px] uppercase font-bold tracking-wider px-3.5 py-1.5 rounded-bl-xl shadow-sm">
-                  ⭐ Most Popular
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-bold text-foreground text-xl">Professional</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Best for medium active estates</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold text-foreground">₦300,000</span>
-                    <span className="text-muted-foreground text-xs font-semibold">/ year</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-foreground/80">
-                    {['Everything in Starter', 'Up to 1,500 resident accounts', 'Visitor access gate code generator', 'Community discussion groups'].map(item => (
-                      <li key={item} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Link href="/signup" className="mt-8 block">
-                  <Button className="w-full font-semibold rounded-xl btn-interactive text-sm">
-                    Register Pro Estate
-                  </Button>
-                </Link>
-              </Card>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="reveal-scale">
-              <Card hoverEffect={false} className="p-8 h-full flex flex-col justify-between border border-border shadow-sm rounded-xl">
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="font-bold text-foreground text-xl">Enterprise</h4>
-                    <p className="text-xs text-muted-foreground mt-1">For large premium developments</p>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold text-foreground">₦500,000</span>
-                    <span className="text-muted-foreground text-xs font-semibold">/ year</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-foreground/80">
-                    {['Everything in Pro', 'Unlimited residents & staff', 'Custom domain mapping (yourestate.com)', 'White-label logo branding'].map(item => (
-                      <li key={item} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <Link href="/signup" className="mt-8 block">
-                  <Button variant="outline" className="w-full font-semibold rounded-xl btn-interactive text-sm">
-                    Contact Sales
-                  </Button>
-                </Link>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== CONTACT SECTION ===================== */}
-      {/* Forms overhaul: label ABOVE input, gap-2 inputs */}
-      <section id="contact" className="relative py-16 sm:py-24 border-t border-border/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" ref={contactRef}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground reveal" style={{ transitionDelay: '0ms' }}>
-                  Get in Touch
-                </h2>
-                <p className="text-muted-foreground leading-relaxed reveal text-sm" style={{ transitionDelay: '80ms' }}>
-                  Have questions about payment integration, verification APIs, or gated security setups? Let us know.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  { icon: Phone, label: 'Phone', value: '+234 801 234 5678' },
-                  { icon: Mail, label: 'Email', value: 'support@neighborly.ng' },
-                  { icon: MapPin, label: 'Office', value: 'Victoria Island, Lagos, Nigeria' },
-                ].map((item, i) => (
-                  <div key={item.label} className="flex items-center gap-3.5 reveal" style={{ transitionDelay: `${(i + 2) * 80}ms` }}>
-                    <div className="h-10 w-10 rounded-xl bg-muted border border-border/50 flex items-center justify-center shrink-0">
-                      <item.icon className="h-4 w-4 text-primary" />
+                {showOtpScreen ? (
+                  // OTP SCREEN
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <div className="text-center space-y-2">
+                      <h2 className="text-2xl font-black text-foreground">Verify Account</h2>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        We sent a 6-digit OTP code to <strong className="text-foreground">{email}</strong>. Enter the code below to verify your email.
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{item.label}</p>
-                      <p className="text-sm font-semibold text-foreground mt-0.5">{item.value}</p>
+
+                    {otpError && (
+                      <div className="bg-destructive/10 text-destructive text-xs p-3 rounded-xl border border-destructive/20 font-medium">
+                        {otpError}
+                      </div>
+                    )}
+                    {otpSuccess && (
+                      <div className="bg-emerald-500/10 text-emerald-600 text-xs p-3 rounded-xl border border-emerald-500/20 font-medium text-center">
+                        ✓ Email verified successfully! Redirecting...
+                      </div>
+                    )}
+                    
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">OTP Verification Code</label>
+                      <input
+                        type="text"
+                        placeholder="000000"
+                        maxLength={6}
+                        required
+                        value={otpToken}
+                        onChange={(e) => setOtpToken(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full text-center tracking-[0.75em] text-2xl font-bold rounded-xl border border-input bg-card py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                      />
+                    </div>
+
+                    <Button type="submit" disabled={otpVerifying || otpSuccess} className="w-full font-semibold rounded-xl py-3.5 btn-interactive">
+                      {otpVerifying ? 'Verifying...' : 'Verify OTP Code'}
+                    </Button>
+                  </form>
+                ) : (
+                  // REGISTRATION SIGN-UP CARD
+                  <div className="space-y-5">
+                    <div className="space-y-1 text-center">
+                      <h2 className="text-2xl font-black text-foreground tracking-tight">Create Account</h2>
+                      <p className="text-xs text-muted-foreground">Join your gated neighborhood today</p>
+                    </div>
+
+                    {error && (
+                      <div className="bg-destructive/10 text-destructive text-xs p-3 rounded-xl border border-destructive/20 font-medium">
+                        {error}
+                      </div>
+                    )}
+
+                    {/* Nextdoor-Style Top Selection Tabs: Resident (Tenant) vs Estate Admin (Landlord) */}
+                    <div className="flex border-b border-border">
+                      <button
+                        onClick={() => setRole('resident')}
+                        className={`flex-1 text-center py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                          role === 'resident'
+                            ? 'border-primary text-primary font-black'
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Register as Resident
+                      </button>
+                      <button
+                        onClick={() => setRole('estate_admin')}
+                        className={`flex-1 text-center py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                          role === 'estate_admin'
+                            ? 'border-primary text-primary font-black'
+                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Register as Landlord/Admin
+                      </button>
+                    </div>
+
+                    {/* Social Sign-In Options (Nextdoor Style) */}
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => {}}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 border border-border rounded-xl text-xs font-bold text-foreground bg-card hover:bg-muted/50 transition-all cursor-pointer"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-2.86-4.53-2.86-4.53z"/>
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        Continue with Google
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {}}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 border border-border rounded-xl text-xs font-bold text-foreground bg-card hover:bg-muted/50 transition-all cursor-pointer"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/>
+                        </svg>
+                        Continue with Apple
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-[1px] bg-border" />
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">or email signup</span>
+                      <div className="flex-1 h-[1px] bg-border" />
+                    </div>
+
+                    <form onSubmit={handleRegister} className="space-y-3.5">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="john@example.com"
+                          className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+
+                      {/* Resident dropdown to select estate */}
+                      {role === 'resident' && (
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Select Your Estate</label>
+                          <select
+                            value={selectedEstateId}
+                            required
+                            onChange={(e) => setSelectedEstateId(e.target.value)}
+                            className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="">-- Choose Estate --</option>
+                            {estates.map((e) => (
+                              <option key={e.id} value={e.id}>{e.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Estate Admin / Landlord input */}
+                      {role === 'estate_admin' && (
+                        <div className="space-y-3.5 border-t border-border/55 pt-3.5">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Estate / Community Name</label>
+                            <input
+                              type="text"
+                              required
+                              value={newEstateName}
+                              onChange={(e) => setNewEstateName(e.target.value)}
+                              placeholder="e.g. Lekki Phase 1"
+                              className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Desired Subdomain</label>
+                            <input
+                              type="text"
+                              required
+                              value={newEstateSubdomain}
+                              onChange={(e) => setNewEstateSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                              placeholder="e.g. lekki-1"
+                              className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+                            />
+                            {newEstateSubdomain && (
+                              <span className="text-[9px] text-muted-foreground">
+                                Portal: <strong className="text-primary font-bold">{newEstateSubdomain}.neighborly.ng</strong>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <Button type="submit" disabled={loading} className="w-full font-semibold rounded-xl py-3.5 btn-interactive mt-2">
+                        {loading ? 'Creating Account...' : 'Create Free Account'}
+                      </Button>
+                    </form>
+
+                    <div className="text-center text-xs text-muted-foreground">
+                      Already have an account?{' '}
+                      <Link href="/login" className="text-primary hover:underline font-bold">
+                        Sign In
+                      </Link>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
 
-            <div className="reveal-scale" style={{ transitionDelay: '200ms' }}>
-              <Card className="p-8 space-y-6 shadow-sm border border-border/60" hoverEffect={false}>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Request a Product Demo</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Leave your details and a representative will schedule a custom walk-through.</p>
-                </div>
-                <form onSubmit={handleDemoSubmit} className="space-y-4">
-                  {/* Rule: Label ABOVE input, standard gap-2 inside form groups */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. John Doe"
-                      className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="john@example.com"
-                      className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Gated Estate Name &amp; Location</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Lekki Heights, Lagos"
-                      className="w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full font-semibold rounded-xl py-5 btn-interactive mt-2 shadow-sm text-sm">
-                    <Send className="mr-2 h-4 w-4" /> Submit Demo Request
-                  </Button>
-                </form>
               </Card>
             </div>
+
           </div>
         </div>
-      </section>
+      </main>
 
       <Footer />
     </div>
