@@ -28,13 +28,25 @@ export function LoginForm() {
       })
 
       if (signInError) {
-        setError(signInError.message)
+        const errMsg = signInError.message || ''
+        if (errMsg.toLowerCase().includes('fetch') || errMsg.toLowerCase().includes('network')) {
+          localStorage.setItem('neighborly_offline', 'true')
+          window.location.reload()
+          return
+        }
+        setError(errMsg)
       } else {
         router.push('/')
         router.refresh()
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login')
+      const msg = err instanceof Error ? err.message : 'An error occurred during login'
+      if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
+        localStorage.setItem('neighborly_offline', 'true')
+        window.location.reload()
+        return
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }

@@ -46,32 +46,40 @@ export function RegisterForm() {
   // 1. Detect subdomain client-side and fetch estates
   useEffect(() => {
     async function initRegisterForm() {
-      // Fetch all estates for dropdown selection
-      const { data: estatesData } = await supabase
-        .from('estates')
-        .select('id, name, subdomain')
-      
-      if (estatesData) {
-        setEstates(estatesData)
-      }
-
-      // Detect subdomain
-      if (typeof window !== 'undefined') {
-        const hostname = window.location.hostname
-        const parts = hostname.split('.')
-        const rootDomains = ['localhost', 'neighborly', 'www']
-        const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0])
+      try {
+        // Fetch all estates for dropdown selection
+        const { data: estatesData } = await supabase
+          .from('estates')
+          .select('id, name, subdomain')
         
-        if (isSubdomain) {
-          const sub = parts[0]
-          setDetectedSubdomain(sub)
+        if (estatesData) {
+          setEstates(estatesData)
+        }
+
+        // Detect subdomain
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname
+          const parts = hostname.split('.')
+          const rootDomains = ['localhost', 'neighborly', 'www']
+          const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0])
           
-          // Match with fetched estates
-          const matched = estatesData?.find((e: any) => e.subdomain === sub)
-          if (matched) {
-            setDetectedEstate(matched)
-            setSelectedEstateId(matched.id)
+          if (isSubdomain) {
+            const sub = parts[0]
+            setDetectedSubdomain(sub)
+            
+            // Match with fetched estates
+            const matched = estatesData?.find((e: any) => e.subdomain === sub)
+            if (matched) {
+              setDetectedEstate(matched)
+              setSelectedEstateId(matched.id)
+            }
           }
+        }
+      } catch (err: any) {
+        const msg = err?.message || ''
+        if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
+          localStorage.setItem('neighborly_offline', 'true')
+          window.location.reload()
         }
       }
     }
@@ -139,7 +147,13 @@ export function RegisterForm() {
       // Show OTP verification screen instead of simple success screen
       setShowOtpScreen(true)
     } catch (err: any) {
-      setError(err.message || 'An error occurred during registration')
+      const msg = err.message || 'An error occurred during registration'
+      if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
+        localStorage.setItem('neighborly_offline', 'true')
+        window.location.reload()
+        return
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }

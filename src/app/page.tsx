@@ -98,14 +98,14 @@ export default function SaaSProductLanding() {
             </p>
 
             {/* Element 4: CTAs (1 primary, 1 secondary) */}
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2 reveal" style={{ transitionDelay: '240ms' }}>
-              <Link href="/signup">
-                <Button size="lg" className="btn-interactive font-semibold px-8 shadow-sm rounded-xl text-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full sm:w-auto max-w-md mx-auto reveal" style={{ transitionDelay: '240ms' }}>
+              <Link href="/signup" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto btn-interactive font-semibold px-8 shadow-sm rounded-xl text-sm justify-center py-6">
                   Register Your Estate <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <a href="#features">
-                <Button size="lg" variant="outline" className="btn-interactive font-semibold px-8 rounded-xl text-sm border-border hover:bg-muted">
+              <a href="#features" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto btn-interactive font-semibold px-8 rounded-xl text-sm border-border hover:bg-muted justify-center py-6">
                   Explore Features
                 </Button>
               </a>
