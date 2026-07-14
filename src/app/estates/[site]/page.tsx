@@ -10,7 +10,8 @@ import { Footer } from '@/components/layout/Footer'
 import {
   Shield, Bell, ShoppingBag, AlertTriangle, Users, MapPin, Wrench, ArrowRight,
   MessageSquare, FileText, Key, LogIn, UserPlus, Lock, Zap, Clock, Home, Upload,
-  Send, Filter, Tag, Plus, Check, Copy
+  Send, Filter, Tag, Plus, Check, Copy, Heart, Smile, Megaphone, HelpCircle,
+  Pin, Share2, AlertCircle, Star, ThumbsUp, MoreVertical, Bookmark, MessageCircle, Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -27,15 +28,32 @@ interface Branding {
   welcome_message: string
 }
 
+interface Comment {
+  id: string
+  sender_name: string
+  content: string
+  created_at: string
+  replies?: Comment[]
+}
+
 interface FeedItem {
   id: string
-  type: 'announcement' | 'marketplace' | 'chat'
+  type: 'announcement' | 'marketplace' | 'chat' | 'poll' | 'lost_found' | 'emergency' | 'recommendation'
   title?: string
   content: string
   price?: number
   sender_name: string
   created_at: string
   owner_id?: string
+  likes_count?: number
+  user_reacted?: string // 'like' | 'love' | 'thank' | 'sad' | null
+  comments?: Comment[]
+  poll_options?: { label: string; votes: number }[]
+  poll_voted_index?: number
+  lost_found?: { item: string; area: string; reward?: string }
+  recommendation?: { category: string; rating: number }
+  pinned?: boolean
+  media_urls?: string[]
 }
 
 export default function EstatePortal({ params }: { params: Promise<{ site: string }> }) {
@@ -62,9 +80,37 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
 
   // Feed and Posting States
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
-  const [feedFilter, setFeedFilter] = useState<'all' | 'announcement' | 'marketplace' | 'chat'>('all')
+  const [feedFilter, setFeedFilter] = useState<'all' | 'announcement' | 'marketplace' | 'chat' | 'poll' | 'lost_found' | 'emergency' | 'recommendation' | 'pinned' | 'saved'>('all')
+  const [savedPostIds, setSavedPostIds] = useState<string[]>([])
+  
+  // Rich Composer States
+  const [composerTab, setComposerTab] = useState<'chat' | 'poll' | 'lost_found' | 'recommendation' | 'emergency'>('chat')
   const [newChatMsg, setNewChatMsg] = useState('')
   const [postingChat, setPostingChat] = useState(false)
+  
+  // Poll composer state
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOptions, setPollOptions] = useState(['', ''])
+  
+  // Lost & Found composer state
+  const [lostItem, setLostItem] = useState('')
+  const [lostArea, setLostArea] = useState('')
+  const [lostReward, setLostReward] = useState('')
+  const [lostDesc, setLostDesc] = useState('')
+
+  // Recommendation composer state
+  const [recCategory, setRecCategory] = useState('Artisan')
+  const [recRating, setRecRating] = useState(5)
+  const [recDesc, setRecDesc] = useState('')
+
+  // Emergency Alert composer state
+  const [emergencyDesc, setEmergencyDesc] = useState('')
+
+  // Comments and replies input state
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
+  const [newCommentText, setNewCommentText] = useState('')
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null)
+  const [newReplyText, setNewReplyText] = useState('')
 
   // Quick Guest Pass Generator States
   const [quickVisitorName, setQuickVisitorName] = useState('')
@@ -151,7 +197,11 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         title: a.title,
         content: a.content,
         sender_name: 'Estate Management',
-        created_at: a.created_at
+        created_at: a.created_at,
+        likes_count: 3,
+        comments: [
+          { id: '1', sender_name: 'Amara Nwachukwu', content: 'Thanks for this update. Good to know.', created_at: new Date(Date.now() - 3600000).toISOString() }
+        ]
       }))
 
       const formattedMarketplace: FeedItem[] = (marketplace || []).map((m: any) => ({
@@ -162,7 +212,9 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         price: m.price,
         sender_name: 'Verified Resident',
         created_at: m.created_at,
-        owner_id: m.owner_id
+        owner_id: m.owner_id,
+        likes_count: 1,
+        comments: []
       }))
 
       const formattedChats: FeedItem[] = (chats || []).map((c: any) => ({
@@ -171,56 +223,267 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         content: c.content,
         sender_name: c.sender_name || 'Resident',
         created_at: c.created_at,
-        owner_id: c.profile_id
+        owner_id: c.profile_id,
+        likes_count: 2,
+        comments: []
       }))
 
+      // MOCK POLLS, LOST & FOUND, RECOMMENDATIONS, ALERTS FOR RICH FEED EXPERIENCE
+      const mockItems: FeedItem[] = [
+        {
+          id: 'mock-poll-1',
+          type: 'poll',
+          content: 'Should we upgrade the estate security gate to biometric scanner locks this quarter?',
+          sender_name: 'Femi Kuti (Security Commitee)',
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+          likes_count: 12,
+          poll_options: [
+            { label: 'Yes, absolutely needed', votes: 45 },
+            { label: 'No, too expensive', votes: 12 },
+            { label: 'Need more details first', votes: 8 }
+          ],
+          comments: []
+        },
+        {
+          id: 'mock-lost-found-1',
+          type: 'lost_found',
+          content: 'Missing brown Maltese puppy named Max. Wearing a red collar.',
+          lost_found: { item: 'Puppy (Max)', area: 'Gate B Recreational Park', reward: '₦20,000' },
+          sender_name: 'Mrs. Toyin Jacobs',
+          created_at: new Date(Date.now() - 14400000).toISOString(),
+          likes_count: 8,
+          comments: [
+            { id: '2', sender_name: 'Kunle A.', content: 'Shared max in the youth estate group. Hope you find him!', created_at: new Date(Date.now() - 12000000).toISOString() }
+          ]
+        },
+        {
+          id: 'mock-recommendation-1',
+          type: 'recommendation',
+          content: 'Highly recommend Ngozi Madu for all plumbing installations. Replaced our broken water heater within an hour!',
+          recommendation: { category: 'Plumber', rating: 5 },
+          sender_name: 'Dr. Obinna Oguejiofor',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          likes_count: 14,
+          comments: []
+        }
+      ]
+
       // Combine and sort by date descending
-      const combined = [...formattedAnnouncements, ...formattedMarketplace, ...formattedChats]
+      const combined = [...formattedAnnouncements, ...formattedMarketplace, ...formattedChats, ...mockItems]
       combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      
+      // Make the first notice pinned by default
+      if (combined.length > 0) {
+        combined[0].pinned = true
+      }
+      
       setFeedItems(combined)
     } catch (e) {
       console.error('Failed to load activity feed:', e)
     }
   }
 
-  // Handle post new message to feed
-  const handlePostChat = async (e: React.FormEvent) => {
+  // Handle post new item to feed based on composer tab
+  const handlePostFeedItem = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newChatMsg.trim() || !estate || !userId) return
+    if (!estate || !userId) return
     setPostingChat(true)
 
     try {
-      const { data, error } = await supabase
-        .from('estate_messages')
-        .insert({
-          estate_id: estate.id,
-          profile_id: userId,
-          sender_name: userName,
-          content: newChatMsg.trim()
-        })
-        .select()
-        .single()
+      let newItem: FeedItem | null = null;
 
-      if (error) throw error
+      if (composerTab === 'chat' && newChatMsg.trim()) {
+        const { data, error } = await supabase
+          .from('estate_messages')
+          .insert({
+            estate_id: estate.id,
+            profile_id: userId,
+            sender_name: userName,
+            content: newChatMsg.trim()
+          })
+          .select()
+          .single()
 
-      if (data) {
-        // Prepend new post to the feed
-        const newItem: FeedItem = {
-          id: data.id,
-          type: 'chat',
-          content: data.content,
-          sender_name: data.sender_name,
-          created_at: data.created_at,
-          owner_id: data.profile_id
+        if (error) throw error
+        if (data) {
+          newItem = {
+            id: data.id,
+            type: 'chat',
+            content: data.content,
+            sender_name: data.sender_name,
+            created_at: data.created_at,
+            owner_id: data.profile_id,
+            likes_count: 0,
+            comments: []
+          }
+          setNewChatMsg('')
         }
+      } else if (composerTab === 'poll' && pollQuestion.trim()) {
+        const optionsList = pollOptions.filter(o => o.trim() !== '').map(label => ({ label, votes: 0 }))
+        newItem = {
+          id: `poll-${Date.now()}`,
+          type: 'poll',
+          content: pollQuestion.trim(),
+          sender_name: userName,
+          created_at: new Date().toISOString(),
+          likes_count: 0,
+          poll_options: optionsList,
+          comments: []
+        }
+        setPollQuestion('')
+        setPollOptions(['', ''])
+      } else if (composerTab === 'lost_found' && lostItem.trim()) {
+        newItem = {
+          id: `lost-${Date.now()}`,
+          type: 'lost_found',
+          content: lostDesc.trim(),
+          lost_found: { item: lostItem, area: lostArea, reward: lostReward },
+          sender_name: userName,
+          created_at: new Date().toISOString(),
+          likes_count: 0,
+          comments: []
+        }
+        setLostItem('')
+        setLostArea('')
+        setLostReward('')
+        setLostDesc('')
+      } else if (composerTab === 'recommendation' && recDesc.trim()) {
+        newItem = {
+          id: `rec-${Date.now()}`,
+          type: 'recommendation',
+          content: recDesc.trim(),
+          recommendation: { category: recCategory, rating: recRating },
+          sender_name: userName,
+          created_at: new Date().toISOString(),
+          likes_count: 0,
+          comments: []
+        }
+        setRecDesc('')
+        setRecCategory('Artisan')
+      } else if (composerTab === 'emergency' && emergencyDesc.trim()) {
+        newItem = {
+          id: `emergency-${Date.now()}`,
+          type: 'emergency',
+          content: emergencyDesc.trim(),
+          sender_name: userName,
+          created_at: new Date().toISOString(),
+          likes_count: 0,
+          comments: []
+        }
+        setEmergencyDesc('')
+      }
+
+      if (newItem) {
         setFeedItems([newItem, ...feedItems])
-        setNewChatMsg('')
       }
     } catch (err) {
       console.error('Error posting message:', err)
     } finally {
       setPostingChat(false)
     }
+  }
+
+  // Handle Poll Voting
+  const handleVote = (itemId: string, optionIndex: number) => {
+    setFeedItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        // If already voted, ignore
+        if (item.poll_voted_index !== undefined) return item
+        const updatedOptions = [...(item.poll_options || [])]
+        updatedOptions[optionIndex] = {
+          ...updatedOptions[optionIndex],
+          votes: updatedOptions[optionIndex].votes + 1
+        }
+        return {
+          ...item,
+          poll_options: updatedOptions,
+          poll_voted_index: optionIndex
+        }
+      }
+      return item
+    }))
+  }
+
+  // Handle Reactions
+  const handleReact = (itemId: string, reactionType: string) => {
+    setFeedItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const isSame = item.user_reacted === reactionType
+        const countDiff = isSame ? -1 : (item.user_reacted ? 0 : 1)
+        return {
+          ...item,
+          likes_count: (item.likes_count || 0) + countDiff,
+          user_reacted: isSame ? undefined : reactionType
+        }
+      }
+      return item
+    }))
+  }
+
+  // Toggle Saved Posts
+  const toggleSavePost = (postId: string) => {
+    setSavedPostIds(prev =>
+      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
+    )
+  }
+
+  // Add Comment
+  const handleAddComment = (e: React.FormEvent, itemId: string) => {
+    e.preventDefault()
+    if (!newCommentText.trim()) return
+
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      sender_name: userName,
+      content: newCommentText.trim(),
+      created_at: new Date().toISOString(),
+      replies: []
+    }
+
+    setFeedItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          comments: [...(item.comments || []), newComment]
+        }
+      }
+      return item
+    }))
+
+    setNewCommentText('')
+    setActiveCommentId(null)
+  }
+
+  // Add Reply
+  const handleAddReply = (e: React.FormEvent, itemId: string, commentId: string) => {
+    e.preventDefault()
+    if (!newReplyText.trim()) return
+
+    const newReply: Comment = {
+      id: `reply-${Date.now()}`,
+      sender_name: userName,
+      content: newReplyText.trim(),
+      created_at: new Date().toISOString()
+    }
+
+    setFeedItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        const updatedComments = (item.comments || []).map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), newReply]
+            }
+          }
+          return comment
+        })
+        return { ...item, comments: updatedComments }
+      }
+      return item
+    }))
+
+    setNewReplyText('')
+    setActiveReplyId(null)
   }
 
   // Handle quick generate passcode
@@ -333,7 +596,7 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
         <Navbar />
         <main className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md space-y-5">
-            <MapPin className="h-12 w-12 text-destructive mx-auto animate-bounce" />
+            <MapPin className="h-12 w-12 text-destructive mx-auto" />
             <div className="space-y-1.5">
               <h1 className="text-2xl font-black text-foreground">
                 Portal Not Found
@@ -438,6 +701,8 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
   // ============ AUTHENTICATED: Resident Dashboard ============
   const filteredFeed = feedItems.filter(item => {
     if (feedFilter === 'all') return true
+    if (feedFilter === 'pinned') return item.pinned
+    if (feedFilter === 'saved') return savedPostIds.includes(item.id)
     return item.type === feedFilter
   })
 
@@ -628,26 +893,196 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
               </Card>
             )}
 
-            {/* Quick Post Box (Locked if unverified) */}
+            {/* UPGRADED RICH POST COMPOSER */}
             <Card className="p-4 border border-border/80 bg-card shadow-sm rounded-2xl">
-              <form onSubmit={handlePostChat} className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                    {userName[0]?.toUpperCase() || 'U'}
-                  </div>
-                  <textarea
-                    rows={2}
+              {/* Tabs selector */}
+              <div className="flex items-center gap-1.5 border-b border-border/40 pb-2 mb-3 overflow-x-auto no-scrollbar">
+                {[
+                  { value: 'chat', label: 'Discussion', icon: MessageSquare },
+                  { value: 'poll', label: 'Create Poll', icon: HelpCircle },
+                  { value: 'lost_found', label: 'Lost & Found', icon: Sparkles },
+                  { value: 'recommendation', label: 'Recommend', icon: Star },
+                  { value: 'emergency', label: 'Alert', icon: AlertCircle }
+                ].map(tab => (
+                  <button
+                    key={tab.value}
+                    type="button"
                     disabled={isKycLocked}
-                    value={isKycLocked ? 'Verify your identity to post updates and chat with neighbors.' : newChatMsg}
-                    onChange={(e) => setNewChatMsg(e.target.value)}
-                    placeholder={isKycLocked ? 'Identity verification required' : 'Share something with your verified neighbors...'}
-                    className="w-full text-sm text-foreground bg-transparent border-0 placeholder:text-muted-foreground/60 focus:outline-none resize-none pt-1"
-                  />
-                </div>
+                    onClick={() => setComposerTab(tab.value as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer whitespace-nowrap ${
+                      composerTab === tab.value
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                    } ${isKycLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  >
+                    <tab.icon className="h-3.5 w-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handlePostFeedItem} className="space-y-3">
+                {/* 1. Discussion Composer */}
+                {composerTab === 'chat' && (
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                      {userName[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <textarea
+                      rows={2}
+                      disabled={isKycLocked}
+                      value={isKycLocked ? 'Verify your identity to post updates and chat with neighbors.' : newChatMsg}
+                      onChange={(e) => setNewChatMsg(e.target.value)}
+                      placeholder={isKycLocked ? 'Identity verification required' : 'Share something with your verified neighbors...'}
+                      className="w-full text-sm text-foreground bg-transparent border-0 placeholder:text-muted-foreground/60 focus:outline-none resize-none pt-1"
+                    />
+                  </div>
+                )}
+
+                {/* 2. Poll Composer */}
+                {composerTab === 'poll' && (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ask a question..."
+                      value={pollQuestion}
+                      onChange={(e) => setPollQuestion(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <div className="space-y-2">
+                      {pollOptions.map((option, idx) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <span className="text-xs text-muted-foreground font-bold">{idx + 1}.</span>
+                          <input
+                            type="text"
+                            required
+                            placeholder={`Option ${idx + 1}`}
+                            value={option}
+                            onChange={(e) => {
+                              const updated = [...pollOptions]
+                              updated[idx] = e.target.value
+                              setPollOptions(updated)
+                            }}
+                            className="w-full rounded-lg border border-input bg-card px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPollOptions([...pollOptions, ''])}
+                        className="text-[10px] py-1 px-2.5 rounded-lg"
+                      >
+                        + Add Option
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Lost & Found Composer */}
+                {composerTab === 'lost_found' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        required
+                        placeholder="What was lost?"
+                        value={lostItem}
+                        onChange={(e) => setLostItem(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Where/Area?"
+                        value={lostArea}
+                        onChange={(e) => setLostArea(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Reward (optional)"
+                        value={lostReward}
+                        onChange={(e) => setLostReward(e.target.value)}
+                        className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Add more details or item description..."
+                      value={lostDesc}
+                      onChange={(e) => setLostDesc(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-card p-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                )}
+
+                {/* 4. Recommendation Composer */}
+                {composerTab === 'recommendation' && (
+                  <div className="space-y-3">
+                    <div className="flex gap-4 items-center">
+                      <div className="flex-1">
+                        <select
+                          value={recCategory}
+                          onChange={(e) => setRecCategory(e.target.value)}
+                          className="w-full rounded-xl border border-input bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="Plumber">Plumbing</option>
+                          <option value="Electrician">Electrical</option>
+                          <option value="AC Technician">AC Repair</option>
+                          <option value="Carpenter">Carpentry</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground font-bold">Rating:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRecRating(star)}
+                            className="p-0.5 cursor-pointer"
+                          >
+                            <Star className={`h-4.5 w-4.5 ${star <= recRating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Describe your recommendation..."
+                      value={recDesc}
+                      onChange={(e) => setRecDesc(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-card p-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                )}
+
+                {/* 5. Emergency Alert Composer */}
+                {composerTab === 'emergency' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-red-600 bg-red-500/10 p-2.5 rounded-xl border border-red-500/25">
+                      <AlertCircle className="h-5 w-5 shrink-0" />
+                      <span className="text-xs font-bold">This triggers an emergency notification to nearby guards and residents.</span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Specify emergency details (e.g. fire, security breach at gate...)"
+                      value={emergencyDesc}
+                      onChange={(e) => setEmergencyDesc(e.target.value)}
+                      className="w-full rounded-xl border border-red-500/25 bg-card p-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
                 {!isKycLocked && (
                   <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                    <span className="text-[10px] text-muted-foreground">Posting in Community Chat</span>
-                    <Button type="submit" size="sm" disabled={postingChat || !newChatMsg.trim()} className="font-semibold rounded-lg text-xs py-1 px-3 btn-interactive flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground capitalize">Posting to Gated Feed</span>
+                    <Button type="submit" size="sm" disabled={postingChat} className="font-semibold rounded-lg text-xs py-1 px-3 btn-interactive flex items-center gap-1">
                       <Send className="h-3 w-3" /> Post
                     </Button>
                   </div>
@@ -661,8 +1096,11 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                 {[
                   { value: 'all', label: 'All Updates' },
                   { value: 'announcement', label: 'Notices' },
-                  { value: 'marketplace', label: 'Marketplace' },
-                  { value: 'chat', label: 'Chatter' }
+                  { value: 'poll', label: 'Polls' },
+                  { value: 'lost_found', label: 'Lost & Found' },
+                  { value: 'recommendation', label: 'Recs' },
+                  { value: 'pinned', label: 'Pinned' },
+                  { value: 'saved', label: 'Saved' }
                 ].map(tab => (
                   <button
                     key={tab.value}
@@ -692,28 +1130,19 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                 </Card>
               ) : (
                 filteredFeed.map(item => (
-                  <Card key={item.id} className="p-5 border border-border/70 hover:border-border/95 transition-all shadow-sm rounded-2xl flex flex-col justify-between">
+                  <Card key={item.id} className={`p-5 border hover:border-border/95 transition-all shadow-sm rounded-2xl flex flex-col justify-between ${item.pinned ? 'border-primary/45 bg-primary/[0.01]' : 'border-border/70'}`}>
                     <div>
                       {/* Card Header */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2.5">
-                          {item.type === 'announcement' && (
-                            <div className="h-7 w-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                              <Bell className="h-4 w-4" />
-                            </div>
-                          )}
-                          {item.type === 'marketplace' && (
-                            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                              <ShoppingBag className="h-4 w-4" />
-                            </div>
-                          )}
-                          {item.type === 'chat' && (
-                            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
-                              {item.sender_name[0]?.toUpperCase() || 'R'}
-                            </div>
-                          )}
+                          <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
+                            {item.sender_name[0]?.toUpperCase() || 'R'}
+                          </div>
                           <div>
-                            <p className="text-xs font-bold text-foreground leading-none">{item.sender_name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-foreground leading-none">{item.sender_name}</p>
+                              {item.pinned && <Pin className="h-3 w-3 text-primary fill-primary" />}
+                            </div>
                             <p className="text-[9px] text-muted-foreground mt-1">
                               {new Date(item.created_at).toLocaleDateString(undefined, {
                                 month: 'short',
@@ -725,44 +1154,215 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
                           </div>
                         </div>
 
-                        {item.type === 'announcement' && (
-                          <Badge variant="outline" className="text-[9px] font-bold text-amber-600 bg-amber-500/5 border-amber-500/20">Official Notice</Badge>
-                        )}
-                        {item.type === 'marketplace' && (
-                          <Badge variant="outline" className="text-[9px] font-bold text-emerald-600 bg-emerald-500/5 border-emerald-500/20">Marketplace</Badge>
-                        )}
-                        {item.type === 'chat' && (
-                          <Badge variant="outline" className="text-[9px] font-bold text-primary bg-primary/5 border-primary/20">Chatter</Badge>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => toggleSavePost(item.id)}
+                            className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            <Bookmark className={`h-4 w-4 ${savedPostIds.includes(item.id) ? 'text-primary fill-primary' : ''}`} />
+                          </button>
+                          <Badge variant="outline" className="text-[9px] font-bold capitalize">
+                            {item.type}
+                          </Badge>
+                        </div>
                       </div>
 
                       {/* Card Content */}
-                      <div className="space-y-2 mt-2">
+                      <div className="space-y-3 mt-2">
                         {item.title && <h3 className="font-bold text-sm text-foreground">{item.title}</h3>}
                         <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">{item.content}</p>
-                      </div>
-                    </div>
 
-                    {/* Card Footer / Contextual Action */}
-                    {item.type === 'marketplace' && (
-                      <div className="border-t border-border/40 mt-4 pt-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-[9px] text-muted-foreground">Listed Price</p>
-                          <p className="text-sm font-extrabold text-primary">₦{item.price?.toLocaleString()}</p>
+                        {/* Poll Widget inside Feed */}
+                        {item.type === 'poll' && item.poll_options && (
+                          <div className="space-y-2.5 bg-muted/30 p-3.5 rounded-xl border border-border/30">
+                            {item.poll_options.map((opt, oIdx) => {
+                              const totalVotes = (item.poll_options || []).reduce((sum, current) => sum + current.votes, 0)
+                              const percent = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0
+                              const isVoted = item.poll_voted_index !== undefined
+                              return (
+                                <div key={oIdx} className="space-y-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={isVoted}
+                                    onClick={() => handleVote(item.id, oIdx)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex justify-between items-center transition-all ${
+                                      item.poll_voted_index === oIdx
+                                        ? 'bg-primary/10 text-primary border border-primary/20'
+                                        : 'bg-card hover:bg-muted/70 border border-border/50'
+                                    }`}
+                                  >
+                                    <span>{opt.label}</span>
+                                    {isVoted && <span className="font-bold">{percent}%</span>}
+                                  </button>
+                                  {isVoted && (
+                                    <div className="w-full bg-border/40 h-1.5 rounded-full overflow-hidden">
+                                      <div className="bg-primary h-full transition-all" style={{ width: `${percent}%` }} />
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                            <p className="text-[9px] text-muted-foreground font-mono">
+                              Total Votes: {(item.poll_options || []).reduce((sum, current) => sum + current.votes, 0)}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Lost & Found Details */}
+                        {item.type === 'lost_found' && item.lost_found && (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-amber-500/5 p-3 rounded-xl border border-amber-500/15 text-xs text-foreground">
+                            <div>
+                              <p className="text-[9px] uppercase font-bold text-amber-700">Lost Item</p>
+                              <p className="font-bold mt-0.5">{item.lost_found.item}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] uppercase font-bold text-amber-700">Area Last Seen</p>
+                              <p className="font-semibold mt-0.5">{item.lost_found.area}</p>
+                            </div>
+                            {item.lost_found.reward && (
+                              <div>
+                                <p className="text-[9px] uppercase font-bold text-amber-700">Reward</p>
+                                <p className="font-black text-primary mt-0.5">{item.lost_found.reward}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Recommendation details */}
+                        {item.type === 'recommendation' && item.recommendation && (
+                          <div className="flex items-center gap-3 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/15 text-xs text-foreground">
+                            <div className="h-9 w-9 bg-emerald-500/10 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                              <Star className="h-4.5 w-4.5 fill-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold">Recommended: {item.recommendation.category}</p>
+                              <div className="flex items-center gap-0.5 mt-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className={`h-3 w-3 ${s <= (item.recommendation?.rating || 0) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card Actions (Likes & comment toggle) */}
+                      <div className="flex items-center gap-4 mt-5 pt-3 border-t border-border/30 text-muted-foreground text-xs font-semibold">
+                        {/* Reaction options list */}
+                        <div className="flex items-center gap-1 group relative">
+                          <button
+                            onClick={() => handleReact(item.id, 'like')}
+                            className={`flex items-center gap-1 p-1 rounded-lg hover:bg-muted transition-all cursor-pointer ${item.user_reacted ? 'text-primary' : ''}`}
+                          >
+                            <ThumbsUp className="h-4 w-4" />
+                            <span>{item.likes_count || 0}</span>
+                          </button>
+                          
+                          {/* Hover reactions popup */}
+                          <div className="hidden group-hover:flex absolute bottom-full left-0 bg-card border border-border/80 rounded-full shadow-lg p-1 items-center gap-1.5 animate-fade-in-scale z-20">
+                            {[
+                              { label: '👍', value: 'like' },
+                              { label: '❤️', value: 'love' },
+                              { label: '🙏', value: 'thank' },
+                              { label: '😢', value: 'sad' }
+                            ].map(reaction => (
+                              <button
+                                key={reaction.value}
+                                onClick={() => handleReact(item.id, reaction.value)}
+                                className="hover:scale-125 transition-transform p-1 cursor-pointer"
+                              >
+                                {reaction.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <Link href={`/estates/${site}/marketplace`}>
-                          <Button size="sm" className="font-semibold rounded-lg text-xs py-1 px-3.5 btn-interactive">Contact Seller</Button>
-                        </Link>
-                      </div>
-                    )}
 
-                    {item.type === 'announcement' && (
-                      <div className="border-t border-border/40 mt-4 pt-2.5 flex justify-end">
-                        <Link href={`/estates/${site}/notices`} className="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5">
-                          View details <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        <button
+                          onClick={() => {
+                            setActiveCommentId(activeCommentId === item.id ? null : item.id)
+                          }}
+                          className="flex items-center gap-1 hover:text-foreground cursor-pointer"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span>Comments ({(item.comments || []).length})</span>
+                        </button>
+
+                        <button className="flex items-center gap-1 hover:text-foreground ml-auto cursor-pointer">
+                          <Share2 className="h-4 w-4" />
+                          <span>Share</span>
+                        </button>
                       </div>
-                    )}
+
+                      {/* Comments Drawer / Block */}
+                      {activeCommentId === item.id && (
+                        <div className="mt-4 pt-3 border-t border-border/40 space-y-4">
+                          {/* Post comment form */}
+                          <form onSubmit={(e) => handleAddComment(e, item.id)} className="flex gap-2">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Write a comment..."
+                              value={newCommentText}
+                              onChange={(e) => setNewCommentText(e.target.value)}
+                              className="w-full rounded-xl border border-input bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                            <Button type="submit" size="sm" className="font-semibold text-xs rounded-xl py-1 px-3">Comment</Button>
+                          </form>
+
+                          {/* Comments List */}
+                          <div className="space-y-3.5 pl-2 border-l border-border/60">
+                            {(item.comments || []).map(comment => (
+                              <div key={comment.id} className="space-y-2">
+                                <div className="bg-muted/40 p-2.5 rounded-xl border border-border/25">
+                                  <div className="flex justify-between items-center">
+                                    <p className="text-xs font-bold text-foreground">{comment.sender_name}</p>
+                                    <span className="text-[8px] text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{comment.content}</p>
+                                  
+                                  <div className="mt-2">
+                                    <button
+                                      onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
+                                      className="text-[9px] font-bold text-primary hover:underline cursor-pointer"
+                                    >
+                                      Reply
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Nested Replies */}
+                                <div className="space-y-2 pl-4">
+                                  {(comment.replies || []).map(reply => (
+                                    <div key={reply.id} className="bg-muted/60 p-2 rounded-xl border border-border/15">
+                                      <div className="flex justify-between items-center">
+                                        <p className="text-[11px] font-bold text-foreground">{reply.sender_name}</p>
+                                        <span className="text-[8px] text-muted-foreground">{new Date(reply.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                                    </div>
+                                  ))}
+
+                                  {/* Reply input */}
+                                  {activeReplyId === comment.id && (
+                                    <form onSubmit={(e) => handleAddReply(e, item.id, comment.id)} className="flex gap-2 pt-1">
+                                      <input
+                                        type="text"
+                                        required
+                                        placeholder="Reply to comment..."
+                                        value={newReplyText}
+                                        onChange={(e) => setNewReplyText(e.target.value)}
+                                        className="w-full rounded-lg border border-input bg-card px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                      />
+                                      <Button type="submit" size="sm" className="font-semibold text-[10px] rounded-lg px-2 h-7">Reply</Button>
+                                    </form>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </Card>
                 ))
               )}

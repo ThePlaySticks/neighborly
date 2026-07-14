@@ -3,14 +3,13 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 
 export function LoginForm() {
   const router = useRouter()
-  const supabase = createClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -22,20 +21,15 @@ export function LoginForm() {
     setLoading(true)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
         email,
         password,
+        redirect: false,
       })
 
-      if (signInError) {
-        const errMsg = signInError.message || ''
-        if (errMsg.toLowerCase().includes('fetch') || errMsg.toLowerCase().includes('network')) {
-          localStorage.setItem('neighborly_offline', 'true')
-          window.location.reload()
-          return
-        }
-        setError(errMsg)
-      } else {
+      if (result?.error) {
+        setError('Invalid email or password. Please try again.')
+      } else if (result?.ok) {
         router.push('/')
         router.refresh()
       }
@@ -84,6 +78,7 @@ export function LoginForm() {
               )}
             </div>
           )}
+
           <Input
             label="Email Address"
             type="email"

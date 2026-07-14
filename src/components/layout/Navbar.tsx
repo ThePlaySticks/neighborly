@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, Sun, Moon, Laptop } from 'lucide-react'
+import { Menu, X, Sun, Moon, Laptop, Bell, Search } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useTheme } from '@/providers/ThemeProvider'
 
@@ -10,6 +10,8 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false)
+  const [globalSearch, setGlobalSearch] = useState('')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -76,8 +78,53 @@ export function Navbar() {
           ))}
         </nav>
 
+        {/* Global Search Bar (Desktop only) */}
+        <div className="hidden lg:flex items-center relative max-w-xs w-full mx-4">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
+          <input
+            type="text"
+            placeholder="Search residents, posts, groups..."
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-border bg-muted/40 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:bg-card transition-all"
+          />
+        </div>
+
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-3">
+          {/* Notifications Bell */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 rounded-lg btn-interactive relative"
+              onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+            >
+              <Bell className="h-4.5 w-4.5 text-muted-foreground hover:text-foreground" />
+              <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-card" />
+            </Button>
+
+            {showNotifDropdown && (
+              <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-border bg-card shadow-lg p-2 z-50 animate-fade-in-scale">
+                <div className="p-2 border-b border-border/40 flex justify-between items-center">
+                  <span className="text-xs font-bold text-foreground">Notifications</span>
+                  <span className="text-[9px] text-primary font-bold cursor-pointer hover:underline">Mark all read</span>
+                </div>
+                <div className="p-1 max-h-64 overflow-y-auto space-y-1 mt-1">
+                  {[
+                    { text: 'Alhaji Bello requested gate check-in approval for guest Kola Alabi.', time: '5m ago' },
+                    { text: 'Obinna O. commented on your marketplace post "Biometric upgrades".', time: '1h ago' },
+                    { text: 'New estate notice: Upgraded maintenance fee billing parameters set.', time: '1d ago' }
+                  ].map((notif, idx) => (
+                    <div key={idx} className="p-2 hover:bg-muted/50 rounded-xl transition-all text-xs text-foreground/90 leading-relaxed flex flex-col gap-0.5">
+                      <p>{notif.text}</p>
+                      <span className="text-[8px] text-muted-foreground font-mono">{notif.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           {/* Theme Selector */}
           <div className="relative">
             <Button

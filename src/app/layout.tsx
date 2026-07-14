@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { AuthProvider } from "@/providers/AuthProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -92,11 +93,13 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <ThemeProvider>
-          <ToastProvider>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </ToastProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </ToastProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

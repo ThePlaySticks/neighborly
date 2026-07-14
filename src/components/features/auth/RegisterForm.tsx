@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -178,8 +179,18 @@ export function RegisterForm() {
       if (verifyError) throw verifyError
 
       setOtpSuccess(true)
-      setTimeout(() => {
-        window.location.href = '/login'
+      // Auto sign-in via NextAuth after verification
+      setTimeout(async () => {
+        const result = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        })
+        if (result?.ok) {
+          window.location.href = '/'
+        } else {
+          window.location.href = '/login'
+        }
       }, 1500)
     } catch (err: any) {
       setOtpError(err.message || 'OTP verification failed. Please try again.')
@@ -292,7 +303,7 @@ export function RegisterForm() {
               )}
             </div>
           )}
-          
+
           <Input
             label="Full Name"
             placeholder="John Doe"
