@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X, Sun, Moon, Laptop } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -10,6 +10,11 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [showThemeDropdown, setShowThemeDropdown] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   const [isSubdomain, setIsSubdomain] = useState(false)
 
   React.useEffect(() => {
@@ -81,7 +86,9 @@ export function Navbar() {
               className="h-9 w-9 p-0 rounded-lg btn-interactive"
               onClick={() => setShowThemeDropdown(!showThemeDropdown)}
             >
-              {theme === 'light' ? (
+              {!mounted ? (
+                <Sun className="h-4 w-4 text-muted-foreground" />
+              ) : theme === 'light' ? (
                 <Sun className="h-4 w-4 text-primary" />
               ) : theme === 'dark' ? (
                 <Moon className="h-4 w-4 text-primary" />
@@ -145,7 +152,9 @@ export function Navbar() {
             className="h-9 w-9 p-0 rounded-lg btn-interactive"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            {theme === 'dark' ? (
+            {!mounted ? (
+              <Sun className="h-4 w-4 text-muted-foreground" />
+            ) : theme === 'dark' ? (
               <Sun className="h-4 w-4 text-primary" />
             ) : (
               <Moon className="h-4 w-4 text-primary" />

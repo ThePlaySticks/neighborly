@@ -13,17 +13,20 @@ interface ThemeContextProps {
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as Theme | null
-      return savedTheme || 'system'
+  const [theme, setThemeState] = useState<Theme>('system')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as Theme | null
+    if (savedTheme) {
+      setThemeState(savedTheme)
     }
-    return 'system'
-  })
+    setMounted(true)
+  }, [])
 
   // Detect resolvedTheme dynamically on render (with window check)
   let resolvedTheme: 'light' | 'dark' = 'light'
-  if (typeof window !== 'undefined') {
+  if (mounted && typeof window !== 'undefined') {
     if (theme === 'system') {
       resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     } else {
