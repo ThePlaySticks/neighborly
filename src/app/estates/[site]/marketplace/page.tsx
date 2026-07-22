@@ -370,7 +370,7 @@ export default function Marketplace({ params }: { params: Promise<{ site: string
                         <p className="text-[10px] text-muted-foreground">Verified Resident Deal</p>
                         <p className="text-2xl font-black text-primary">₦{featuredItem.price.toLocaleString()}</p>
                       </div>
-                      <Link href={`/estates/${site}/chat`}>
+                      <Link href={`/chat`}>
                         <Button className="font-semibold text-xs py-2 px-4 rounded-xl flex items-center gap-1.5">
                           <MessageSquare className="h-4 w-4" /> Chat Seller
                         </Button>
@@ -425,7 +425,7 @@ export default function Marketplace({ params }: { params: Promise<{ site: string
                             <p className="text-[9px] text-muted-foreground">Price</p>
                             <p className="font-extrabold text-primary text-sm">₦{item.price.toLocaleString()}</p>
                           </div>
-                          <Link href={`/estates/${site}/chat`}>
+                          <Link href={`/chat`}>
                             <Button size="sm" className="font-semibold text-xs py-1.5 rounded-lg flex items-center gap-1">
                               <MessageSquare className="h-3.5 w-3.5" /> Chat
                             </Button>

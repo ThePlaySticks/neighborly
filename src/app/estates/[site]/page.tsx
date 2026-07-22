@@ -767,34 +767,34 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
           <aside className="hidden lg:block lg:col-span-1 space-y-3">
             <div className="sticky top-20 bg-card rounded-2xl border border-border/80 p-4 space-y-1 shadow-sm">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 mb-2">Navigation</p>
-              <Link href={`/estates/${site}`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-primary bg-primary/5">
+              <Link href={`/`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-primary bg-primary/5">
                 <Home className="h-4.5 w-4.5" />
                 <span>Home Feed</span>
               </Link>
-              <Link href={`/estates/${site}/notices`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Link href={`/notices`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Bell className="h-4.5 w-4.5" />
                 <span>Notices</span>
               </Link>
-              <Link href={`/estates/${site}/marketplace`} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Link href={`/marketplace`} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
                 <ShoppingBag className="h-4.5 w-4.5" />
                 <span>Marketplace</span>
               </Link>
-              <Link href={`/estates/${site}/visitors`} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Link href={`/visitors`} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
                 <Users className="h-4.5 w-4.5" />
                 <span>Guest Codes</span>
               </Link>
-              <Link href={`/estates/${site}/chat`} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Link href="/chat" className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${isKycLocked ? 'opacity-50 pointer-events-none' : ''}`}>
                 <MessageSquare className="h-4.5 w-4.5" />
                 <span>Community Chat</span>
               </Link>
-              <Link href={`/estates/${site}/support`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Link href="/support" className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <FileText className="h-4.5 w-4.5" />
                 <span>Support Tickets</span>
               </Link>
 
               {userRole === 'admin' && (
                 <div className="pt-4 mt-3 border-t border-border/60">
-                  <Link href={`/estates/${site}/admin`} className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold text-foreground bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all">
+                  <Link href="/admin" className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold text-foreground bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all">
                     <Shield className="h-4.5 w-4.5 text-amber-600" />
                     <span>Estate Management</span>
                   </Link>
@@ -1455,19 +1455,19 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
 
       {/* Mobile Bottom Tab Bar (Sticky navigation, only visible on mobile < md) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-md border border-border/80 rounded-2xl shadow-lg p-2.5 flex justify-around items-center">
-        <Link href={`/estates/${site}`} className="flex flex-col items-center gap-0.5 text-primary">
+        <Link href="/" className="flex flex-col items-center gap-0.5 text-primary">
           <Home className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Home</span>
         </Link>
-        <Link href={`/estates/${site}/notices`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+        <Link href="/notices" className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
           <Bell className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Notices</span>
         </Link>
-        <Link href={`/estates/${site}/visitors`} className={`flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary ${isKycLocked ? 'opacity-40 pointer-events-none' : ''}`}>
+        <Link href="/visitors" className={`flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary ${isKycLocked ? 'opacity-40 pointer-events-none' : ''}`}>
           <Users className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Guests</span>
         </Link>
-        <Link href={`/estates/${site}/chat`} className={`flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary ${isKycLocked ? 'opacity-40 pointer-events-none' : ''}`}>
+        <Link href="/chat" className={`flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary ${isKycLocked ? 'opacity-40 pointer-events-none' : ''}`}>
           <MessageSquare className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Chat</span>
         </Link>

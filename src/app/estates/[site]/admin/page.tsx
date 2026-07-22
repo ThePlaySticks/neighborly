@@ -648,19 +648,19 @@ export default function EstateAdminPortal({ params }: { params: Promise<{ site: 
 
       {/* Mobile Bottom Tab Bar (Sticky navigation, only visible on mobile < md) */}
       <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-card/90 backdrop-blur-md border border-border/80 rounded-2xl shadow-lg p-2.5 flex justify-around items-center">
-        <Link href={`/estates/${site}`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+        <Link href={`/`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
           <Home className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Portal</span>
         </Link>
-        <Link href={`/estates/${site}/admin`} className="flex flex-col items-center gap-0.5 text-primary">
+        <Link href={`/admin`} className="flex flex-col items-center gap-0.5 text-primary">
           <Shield className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold font-bold">Admin</span>
         </Link>
-        <Link href={`/estates/${site}/notices`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+        <Link href={`/notices`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
           <Bell className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Notices</span>
         </Link>
-        <Link href={`/estates/${site}/chat`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
+        <Link href={`/chat`} className="flex flex-col items-center gap-0.5 text-muted-foreground hover:text-primary">
           <MessageSquare className="h-4 w-4" style={{ strokeWidth: 2 }} />
           <span className="text-[9px] font-bold">Chat</span>
         </Link>

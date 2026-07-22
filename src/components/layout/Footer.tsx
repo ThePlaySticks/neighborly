@@ -7,6 +7,23 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
 export function Footer() {
+  const [isSubdomain, setIsSubdomain] = React.useState(false)
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      const rootDomains = [
+        'localhost',
+        'neighborly.ng',
+        'www.neighborly.ng',
+        'neighborly-zeta.vercel.app',
+        'neighborly-gamma.vercel.app',
+      ]
+      const isRoot = rootDomains.includes(hostname)
+      setIsSubdomain(!isRoot)
+    }
+  }, [])
+
   return (
     <footer className="w-full bg-card border-t border-border mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -30,26 +47,48 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold uppercase tracking-wider text-foreground mb-4">Platform</h4>
             <ul className="space-y-2">
-              <li>
-                <Link href="/services" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Artisans Marketplace
-                </Link>
-              </li>
-              <li>
-                <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Buy/Sell Classifieds
-                </Link>
-              </li>
-              <li>
-                <Link href="/community" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Notice Board
-                </Link>
-              </li>
-              <li>
-                <Link href="/events" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Events
-                </Link>
-              </li>
+              {isSubdomain ? (
+                <>
+                  <li>
+                    <Link href="/services" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Artisans Marketplace
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Buy/Sell Classifieds
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/notices" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Notice Board
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/chat" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Community Chat
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link href="/#features" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Features
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/#how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      How It Works
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Pricing
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 

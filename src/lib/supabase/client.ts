@@ -138,14 +138,19 @@ function createMockClient(): any {
           return d
         }
         if (table === 'tenant_branding') {
-          return [
-            {
-              id: 'mock-estate-id',
-              primary_color: '#2563eb',
-              secondary_color: '#64748b',
-              welcome_message: 'Welcome to our community portal',
-            },
-          ]
+          let d = JSON.parse(getLS('neighborly_mock_branding', '[]'))
+          if (!d.length) {
+            d = [
+              {
+                id: 'mock-estate-id',
+                primary_color: '#2563eb',
+                secondary_color: '#64748b',
+                welcome_message: 'Welcome to our community portal',
+              },
+            ]
+            setLS('neighborly_mock_branding', JSON.stringify(d))
+          }
+          return d
         }
         if (table === 'announcements') return JSON.parse(getLS('neighborly_mock_announcements', '[]'))
         if (table === 'estate_messages') return JSON.parse(getLS('neighborly_mock_messages', '[]'))
@@ -192,7 +197,19 @@ function createMockClient(): any {
             return { eq: () => ({ error: null }), error: null }
           },
         }),
-        upsert: () => ({ error: null }),
+        upsert: (record: any) => {
+          if (table === 'tenant_branding') {
+            const d = JSON.parse(getLS('neighborly_mock_branding', '[]'))
+            const existingIdx = d.findIndex((b: any) => b.id === record.id)
+            if (existingIdx > -1) {
+              d[existingIdx] = { ...d[existingIdx], ...record }
+            } else {
+              d.push({ id: record.id || 'mock-estate-id', ...record })
+            }
+            setLS('neighborly_mock_branding', JSON.stringify(d))
+          }
+          return { error: null }
+        },
       }
     },
     // Stubs for realtime (chat page)
