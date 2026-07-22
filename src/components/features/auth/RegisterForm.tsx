@@ -78,11 +78,7 @@ export function RegisterForm() {
           }
         }
       } catch (err: any) {
-        const msg = err?.message || ''
-        if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
-          localStorage.setItem('neighborly_offline', 'true')
-          window.location.reload()
-        }
+        console.error('Failed to init register form:', err)
       }
     }
     initRegisterForm()
@@ -149,13 +145,7 @@ export function RegisterForm() {
       // Show OTP verification screen
       setShowOtpScreen(true)
     } catch (err: any) {
-      const msg = err.message || 'An error occurred during registration'
-      if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
-        localStorage.setItem('neighborly_offline', 'true')
-        window.location.reload()
-        return
-      }
-      setError(msg)
+      setError(err.message || 'An error occurred during registration')
     } finally {
       setLoading(false)
     }
@@ -214,20 +204,6 @@ export function RegisterForm() {
             {otpError && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl border border-destructive/20 font-medium space-y-2">
                 <p>{otpError}</p>
-                {(otpError.toLowerCase().includes('fetch') || otpError.toLowerCase().includes('network')) && (
-                  <div className="pt-1.5 border-t border-destructive/10">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        localStorage.setItem('neighborly_offline', 'true');
-                        window.location.reload();
-                      }}
-                      className="w-full bg-primary hover:bg-primary/95 text-white text-[10px] py-1 h-8 rounded-lg font-bold"
-                    >
-                      Enable Offline Demo Mode
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
             {otpSuccess && (
@@ -292,23 +268,6 @@ export function RegisterForm() {
           {error && (
             <div className="bg-destructive/10 text-destructive text-sm p-3.5 rounded-xl border border-destructive/20 font-medium space-y-2.5">
               <p>{error}</p>
-              {(error.toLowerCase().includes('fetch') || error.toLowerCase().includes('network')) && (
-                <div className="pt-2 border-t border-destructive/15 space-y-1.5">
-                  <p className="text-[10px] text-muted-foreground leading-normal">
-                    Database connection failed. Enable Offline Demo Mode to test account creation and dashboard previews inside your browser cache.
-                  </p>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      localStorage.setItem('neighborly_offline', 'true');
-                      window.location.reload();
-                    }}
-                    className="w-full bg-primary hover:bg-primary/95 text-white text-[10px] py-1 h-8 rounded-lg font-bold"
-                  >
-                    Enable Offline Demo Mode
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 

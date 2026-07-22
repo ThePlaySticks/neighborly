@@ -561,12 +561,6 @@ export default function EstatePortal({ params }: { params: Promise<{ site: strin
           }
         }
       } catch (err: any) {
-        const msg = err?.message || ''
-        if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
-          localStorage.setItem('neighborly_offline', 'true')
-          window.location.reload()
-          return
-        }
         console.error('Error fetching estate:', err)
       } finally {
         setLoading(false)
