@@ -6,9 +6,8 @@ import { signIn } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select, Badge } from '@/components/ui/FormControls'
+import { Badge } from '@/components/ui/FormControls'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
-import { Shield, Home, Briefcase, ChevronRight, User } from 'lucide-react'
 
 interface Estate {
   id: string
@@ -21,20 +20,21 @@ export function RegisterForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('resident') // 'resident', 'estate_admin', 'provider'
   
-  // Estate selection for residents
-  const [estates, setEstates] = useState<Estate[]>([])
+  // Role is determined by subdomain detection, not user selection
+  const [role, setRole] = useState<'resident' | 'estate_admin'>('estate_admin')
+  
+  // Estate selection for residents (subdomain)
   const [selectedEstateId, setSelectedEstateId] = useState('')
   const [detectedSubdomain, setDetectedSubdomain] = useState<string | null>(null)
   const [detectedEstate, setDetectedEstate] = useState<Estate | null>(null)
+  const [isOnSubdomain, setIsOnSubdomain] = useState(false)
 
-  // New estate details for estate admins
+  // New estate details for estate admins (main domain)
   const [newEstateName, setNewEstateName] = useState('')
   const [newEstateSubdomain, setNewEstateSubdomain] = useState('')
 
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // OTP flow states
@@ -44,36 +44,37 @@ export function RegisterForm() {
   const [otpVerifying, setOtpVerifying] = useState(false)
   const [otpSuccess, setOtpSuccess] = useState(false)
 
-  // 1. Detect subdomain client-side and fetch estates
+  // Detect subdomain client-side and auto-configure role
   useEffect(() => {
     async function initRegisterForm() {
       try {
-        // Fetch all estates for dropdown selection
-        const { data: estatesData } = await supabase
-          .from('estates')
-          .select('id, name, subdomain')
-        
-        if (estatesData) {
-          setEstates(estatesData)
-        }
-
-        // Detect subdomain
         if (typeof window !== 'undefined') {
           const hostname = window.location.hostname
           const parts = hostname.split('.')
-          const rootDomains = ['localhost', 'neighborly', 'www']
+          const rootDomains = ['localhost', 'neighborly', 'www', 'vercel']
           const isSubdomain = parts.length > 1 && !rootDomains.includes(parts[0])
           
           if (isSubdomain) {
             const sub = parts[0]
             setDetectedSubdomain(sub)
+            setIsOnSubdomain(true)
+            setRole('resident')
             
-            // Match with fetched estates
-            const matched = estatesData?.find((e: any) => e.subdomain === sub)
-            if (matched) {
-              setDetectedEstate(matched)
-              setSelectedEstateId(matched.id)
+            // Fetch the estate matching this subdomain
+            const { data: estateData } = await supabase
+              .from('estates')
+              .select('id, name, subdomain')
+              .eq('subdomain', sub)
+              .single()
+            
+            if (estateData) {
+              setDetectedEstate(estateData)
+              setSelectedEstateId(estateData.id)
             }
+          } else {
+            // Main domain — landlord/estate admin registration
+            setRole('estate_admin')
+            setIsOnSubdomain(false)
           }
         }
       } catch (err: any) {
@@ -95,7 +96,7 @@ export function RegisterForm() {
     try {
       // Validations
       if (role === 'resident' && !selectedEstateId) {
-        throw new Error('Please select an estate to join')
+        throw new Error('No estate detected for this subdomain. Please contact the estate administrator.')
       }
       if (role === 'estate_admin' && (!newEstateName || !newEstateSubdomain)) {
         throw new Error('Please enter both estate name and desired subdomain')
@@ -127,7 +128,7 @@ export function RegisterForm() {
             name: newEstateName,
             subdomain: newEstateSubdomain.toLowerCase().trim(),
             admin_id: userId,
-            subscription_status: 'active' // Initial registration active
+            subscription_status: 'active'
           })
           .select()
           .single()
@@ -145,7 +146,7 @@ export function RegisterForm() {
         }
       }
 
-      // Show OTP verification screen instead of simple success screen
+      // Show OTP verification screen
       setShowOtpScreen(true)
     } catch (err: any) {
       const msg = err.message || 'An error occurred during registration'
@@ -275,9 +276,16 @@ export function RegisterForm() {
     <form onSubmit={handleRegister} className="w-full max-w-md mx-auto">
       <Card className="shadow-2xl border border-border">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl text-center font-black tracking-tight">Create account</CardTitle>
+          <CardTitle className="text-3xl text-center font-black tracking-tight">
+            {isOnSubdomain ? 'Join Your Community' : 'Register Your Estate'}
+          </CardTitle>
           <CardDescription className="text-center text-sm">
-            Join Neighborly today to connect with your community
+            {isOnSubdomain
+              ? detectedEstate
+                ? `Create your resident account for ${detectedEstate.name}`
+                : 'Create your resident account'
+              : 'Create a private portal for your estate and tenants'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -301,6 +309,14 @@ export function RegisterForm() {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Show detected estate badge when on subdomain */}
+          {isOnSubdomain && detectedEstate && (
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground flex items-center justify-between">
+              <span>🏡 Joining <strong>{detectedEstate.name}</strong></span>
+              <Badge variant="success">Auto-Detected</Badge>
             </div>
           )}
 
@@ -328,71 +344,8 @@ export function RegisterForm() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sign up as</label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('resident')}
-                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                  role === 'resident'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Home className="h-4 w-4" />
-                <span>Resident</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('estate_admin')}
-                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                  role === 'estate_admin'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Shield className="h-4 w-4" />
-                <span>Estate Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('provider')}
-                className={`py-2 px-3 text-xs rounded-xl font-bold border transition-all flex flex-col items-center gap-1.5 ${
-                  role === 'provider'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Briefcase className="h-4 w-4" />
-                <span>Artisan</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Conditional Fields based on Role Selection */}
-          {role === 'resident' && (
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Your Estate</label>
-              {detectedEstate ? (
-                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground flex items-center justify-between">
-                  <span>🏡 Joined to <strong>{detectedEstate.name}</strong></span>
-                  <Badge variant="success">Detected</Badge>
-                </div>
-              ) : (
-                <Select
-                  options={[
-                    { label: '-- Select Gated Estate --', value: '' },
-                    ...estates.map(e => ({ label: e.name, value: e.id }))
-                  ]}
-                  value={selectedEstateId}
-                  onChange={(e) => setSelectedEstateId(e.target.value)}
-                />
-              )}
-            </div>
-          )}
-
-          {role === 'estate_admin' && (
+          {/* Estate Admin fields — only on main domain */}
+          {!isOnSubdomain && (
             <div className="space-y-4 border-t border-border pt-4">
               <Input
                 label="Estate / Community Name"
@@ -421,7 +374,7 @@ export function RegisterForm() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full font-semibold rounded-xl" isLoading={loading}>
-            Create Account
+            {isOnSubdomain ? 'Create Resident Account' : 'Register Estate'}
           </Button>
           <div className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
