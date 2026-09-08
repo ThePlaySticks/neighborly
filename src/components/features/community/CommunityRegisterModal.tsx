@@ -56,11 +56,19 @@ export function CommunityRegisterModal({ buttonText = 'Register Your Estate' }: 
 
     if (res.success && res.slug) {
       setIsOpen(false)
-      router.push(`/c/${res.slug}/admin`)
+      router.push('/manager/dashboard')
     } else {
       setError(res.error || 'Failed to create community.')
     }
   }
+
+  const NIGERIAN_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT - Abuja', 'Gombe',
+    'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+    'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto',
+    'Taraba', 'Yobe', 'Zamfara'
+  ]
 
   return (
     <>
@@ -126,13 +134,20 @@ export function CommunityRegisterModal({ buttonText = 'Register Your Estate' }: 
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="State"
-                  placeholder="e.g. Lagos"
-                  required
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">State</label>
+                  <select
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    {NIGERIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Community Type</label>
                   <select

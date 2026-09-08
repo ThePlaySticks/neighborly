@@ -33,7 +33,8 @@ export function LoginForm() {
       if (!result.success) {
         setError(result.error || 'Invalid email or password. Please try again.')
       } else {
-        router.push(redirectUrl)
+        const destination = (redirectUrl && redirectUrl !== '/') ? redirectUrl : (result.defaultRedirect || '/manager/dashboard')
+        router.push(destination)
         router.refresh()
       }
     } catch (err: unknown) {

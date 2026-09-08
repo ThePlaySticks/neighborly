@@ -73,18 +73,18 @@ export function Footer() {
               ) : (
                 <>
                   <li>
-                    <Link href="/#features" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                      Features
-                    </Link>
-                  </li>
-                  <li>
                     <Link href="/#how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                       How It Works
                     </Link>
                   </li>
                   <li>
-                    <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                      Pricing
+                    <Link href="/#features" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Features
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                      Manager Login
                     </Link>
                   </li>
                 </>

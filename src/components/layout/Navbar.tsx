@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Sun, Moon, Laptop, Bell, Search, Shield, LogOut, User } from 'lucide-react'
+import { Menu, X, Sun, Moon, Laptop, LogOut, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useTheme } from '@/providers/ThemeProvider'
 import { logoutAction } from '@/lib/actions/community'
@@ -26,9 +26,8 @@ export function Navbar() {
   }
 
   const mainLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Estates', href: '/#estates' },
     { label: 'How It Works', href: '/#how-it-works' },
+    { label: 'Features', href: '/#features' },
   ]
 
   return (
@@ -105,8 +104,9 @@ export function Navbar() {
           </div>
 
           <Link href="/login">
-            <Button variant="outline" size="sm" className="font-semibold rounded-xl text-xs">
-              Sign In
+            <Button variant="outline" size="sm" className="font-semibold rounded-xl text-xs gap-1.5">
+              <KeyRound className="w-3.5 h-3.5" />
+              Manager Login
             </Button>
           </Link>
 
@@ -162,8 +162,9 @@ export function Navbar() {
           ))}
           <div className="pt-2 border-t border-border flex flex-col space-y-2">
             <Link href="/login" onClick={() => setIsOpen(false)}>
-              <Button variant="outline" className="w-full rounded-xl py-2 text-xs font-semibold">
-                Sign In
+              <Button variant="outline" className="w-full rounded-xl py-2 text-xs font-semibold gap-1.5">
+                <KeyRound className="w-3.5 h-3.5" />
+                Manager Login
               </Button>
             </Link>
             <Button

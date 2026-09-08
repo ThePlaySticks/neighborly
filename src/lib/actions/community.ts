@@ -19,7 +19,19 @@ export async function loginAction(formData: FormData) {
   }
 
   await setSessionUser(user.id)
-  return { success: true, user }
+
+  // Determine appropriate redirect destination based on user's memberships
+  const memberships = dal.getUserMemberships(user.id)
+  let defaultRedirect = '/'
+  const adminMembership = memberships.find(m => m.role === 'COMMUNITY_ADMIN' || m.role === 'SUPER_ADMIN')
+  if (adminMembership) {
+    defaultRedirect = '/manager/dashboard'
+  } else if (memberships.length > 0) {
+    const residentMembership = memberships.find(m => m.status === 'APPROVED') || memberships[0]
+    defaultRedirect = `/c/${residentMembership.community.slug}`
+  }
+
+  return { success: true, user, defaultRedirect }
 }
 
 export async function logoutAction() {
