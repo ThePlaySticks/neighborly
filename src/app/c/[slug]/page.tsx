@@ -8,7 +8,7 @@ import { Footer } from '@/components/layout/Footer'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/FormControls'
-import { ShieldCheck, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, UserPlus, LogIn, Lock, Users } from 'lucide-react'
+import { ShieldCheck, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, UserPlus, LogIn, Lock, Users, MapPin } from 'lucide-react'
 import { CommunityFeedView } from '@/components/features/community/CommunityFeedView'
 
 export default async function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -202,20 +202,6 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
               </div>
             </div>
           </div>
-        </div>
-      </main>
-                  <LogIn className="w-4 h-4" />
-                  Resident Sign In
-                </Button>
-              </Link>
-            </div>
-
-            <div className="pt-2">
-              <Link href={`/c/${community.slug}/admin`} className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
-                Estate Management Login →
-              </Link>
-            </div>
-          </Card>
         </div>
       </main>
       <Footer />
