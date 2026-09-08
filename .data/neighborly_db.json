@@ -1,0 +1,264 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-banana",
+      "fullName": "Folake Adeleke",
+      "email": "admin@bananaisland.ng",
+      "phone": "+234 802 111 2233",
+      "passwordHash": "admin123",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "usr-resident-chinedu",
+      "fullName": "Chinedu Okafor",
+      "email": "chinedu@example.com",
+      "phone": "+234 803 222 3344",
+      "passwordHash": "resident123",
+      "createdAt": "2026-01-05T09:00:00.000Z",
+      "updatedAt": "2026-01-05T09:00:00.000Z"
+    },
+    {
+      "id": "usr-resident-aisha",
+      "fullName": "Aisha Bello",
+      "email": "aisha@example.com",
+      "phone": "+234 805 333 4455",
+      "passwordHash": "resident123",
+      "createdAt": "2026-01-10T10:00:00.000Z",
+      "updatedAt": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "usr-admin-lekki",
+      "fullName": "Dr. Babatunde Pedro",
+      "email": "admin@lekkiphase1.ng",
+      "phone": "+234 807 444 5566",
+      "passwordHash": "admin123",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    }
+  ],
+  "communities": [
+    {
+      "id": "comm-banana-island",
+      "name": "Banana Island Estate",
+      "slug": "banana-island",
+      "description": "Premier private artificial island residential community off Ikoyi, Lagos.",
+      "location": "Ikoyi Peninsula",
+      "city": "Ikoyi",
+      "state": "Lagos",
+      "country": "Nigeria",
+      "communityType": "Private Gated Island",
+      "status": "active",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "comm-lekki-1",
+      "name": "Lekki Phase 1 Scheme",
+      "slug": "lekki-phase-1",
+      "description": "Vibrant residential estate community in the heart of Lekki peninsula.",
+      "location": "Lekki Peninsula 1",
+      "city": "Lekki",
+      "state": "Lagos",
+      "country": "Nigeria",
+      "communityType": "Residential Gated Estate",
+      "status": "active",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "comm-emerald",
+      "name": "Emerald Estate",
+      "slug": "emerald-estate",
+      "description": "Tranquil family-friendly secured estate along Monastery Road, Sangotedo.",
+      "location": "Sangotedo Lekki-Epe Expressway",
+      "city": "Sangotedo",
+      "state": "Lagos",
+      "country": "Nigeria",
+      "communityType": "Gated Residential Community",
+      "status": "active",
+      "createdAt": "2026-01-02T08:00:00.000Z",
+      "updatedAt": "2026-01-02T08:00:00.000Z"
+    }
+  ],
+  "memberships": [
+    {
+      "id": "mem-1",
+      "userId": "usr-admin-banana",
+      "communityId": "comm-banana-island",
+      "role": "COMMUNITY_ADMIN",
+      "status": "APPROVED",
+      "houseNumber": "1",
+      "block": "Zone A",
+      "residentType": "Owner",
+      "verificationStatus": "verified",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    },
+    {
+      "id": "mem-2",
+      "userId": "usr-resident-chinedu",
+      "communityId": "comm-banana-island",
+      "role": "RESIDENT",
+      "status": "APPROVED",
+      "houseNumber": "23",
+      "block": "Block 4",
+      "residentType": "Tenant",
+      "verificationStatus": "verified",
+      "createdAt": "2026-01-05T09:00:00.000Z",
+      "updatedAt": "2026-01-05T09:00:00.000Z"
+    },
+    {
+      "id": "mem-3",
+      "userId": "usr-resident-aisha",
+      "communityId": "comm-banana-island",
+      "role": "RESIDENT",
+      "status": "APPROVED",
+      "houseNumber": "12",
+      "block": "Block 7",
+      "residentType": "Owner",
+      "verificationStatus": "verified",
+      "createdAt": "2026-01-10T10:00:00.000Z",
+      "updatedAt": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "mem-4",
+      "userId": "usr-admin-lekki",
+      "communityId": "comm-lekki-1",
+      "role": "COMMUNITY_ADMIN",
+      "status": "APPROVED",
+      "houseNumber": "Plot 18",
+      "block": "Admiralty Way",
+      "residentType": "Owner",
+      "verificationStatus": "verified",
+      "createdAt": "2026-01-01T08:00:00.000Z",
+      "updatedAt": "2026-01-01T08:00:00.000Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-b1",
+      "communityId": "comm-banana-island",
+      "authorId": "usr-admin-banana",
+      "authorName": "Estate Management",
+      "authorBlock": "Zone A",
+      "content": "Water supply pipeline maintenance scheduled for tomorrow from 10:00 AM to 2:00 PM. Please store water in advance.",
+      "images": [],
+      "isOfficial": true,
+      "likesCount": 14,
+      "createdAt": "2026-03-01T09:00:00.000Z",
+      "updatedAt": "2026-03-01T09:00:00.000Z"
+    },
+    {
+      "id": "post-b2",
+      "communityId": "comm-banana-island",
+      "authorId": "usr-resident-chinedu",
+      "authorName": "Chinedu Okafor",
+      "authorBlock": "Block 4",
+      "content": "Does anyone know a reliable electrician who can assist with an inverter & solar changeover setup today?",
+      "images": [],
+      "isOfficial": false,
+      "likesCount": 5,
+      "createdAt": "2026-03-02T11:30:00.000Z",
+      "updatedAt": "2026-03-02T11:30:00.000Z"
+    },
+    {
+      "id": "post-l1",
+      "communityId": "comm-lekki-1",
+      "authorId": "usr-admin-lekki",
+      "authorName": "Lekki 1 Security Committee",
+      "authorBlock": "Admiralty",
+      "content": "Security briefing: Admiralty Gate 2 access cards are currently undergoing biometric upgrade.",
+      "images": [],
+      "isOfficial": true,
+      "likesCount": 8,
+      "createdAt": "2026-03-01T10:00:00.000Z",
+      "updatedAt": "2026-03-01T10:00:00.000Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": "com-1",
+      "postId": "post-b2",
+      "authorId": "usr-resident-aisha",
+      "authorName": "Aisha Bello",
+      "content": "Try Tunde Electrical from the Services tab, he installed our 5kVA system last month and was excellent!",
+      "createdAt": "2026-03-02T12:15:00.000Z"
+    }
+  ],
+  "announcements": [
+    {
+      "id": "ann-1",
+      "communityId": "comm-banana-island",
+      "authorId": "usr-admin-banana",
+      "authorName": "Estate Management",
+      "title": "Quarterly Estate Residents General Meeting",
+      "content": "The Q1 General Meeting will take place at the Community Clubhouse on Saturday at 10:00 AM. Agenda includes gate security upgrade, road resurfacing, and estate levy reconciliation.",
+      "priority": "high",
+      "category": "General",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "updatedAt": "2026-03-01T08:00:00.000Z"
+    },
+    {
+      "id": "ann-2",
+      "communityId": "comm-banana-island",
+      "authorId": "usr-admin-banana",
+      "authorName": "Security Desk",
+      "title": "New Visitor QR Code System at Main Gate",
+      "content": "All residents are advised to generate visitor gate passcodes via the portal for incoming visitors to minimize queueing at the entrance gate.",
+      "priority": "normal",
+      "category": "Security",
+      "createdAt": "2026-02-28T14:00:00.000Z",
+      "updatedAt": "2026-02-28T14:00:00.000Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-1",
+      "communityId": "comm-banana-island",
+      "creatorId": "usr-admin-banana",
+      "creatorName": "Sports Committee",
+      "title": "Annual Banana Island Friendly Football Tournament",
+      "description": "Zone A vs Zone B friendly football match at the estate sports complex.",
+      "date": "Saturday, March 14, 2026 • 4:00 PM",
+      "location": "Estate Sports Pavilion",
+      "createdAt": "2026-03-01T12:00:00.000Z"
+    }
+  ],
+  "serviceProviders": [
+    {
+      "id": "srv-1",
+      "communityId": "comm-banana-island",
+      "name": "Tunde Alao Electrical & Solar",
+      "category": "Electrician",
+      "rating": 4.9,
+      "description": "Certified installer for inverters, solar panels, and domestic wiring troubleshooting.",
+      "phone": "+234 802 333 4455",
+      "createdAt": "2026-01-15T09:00:00.000Z"
+    },
+    {
+      "id": "srv-2",
+      "communityId": "comm-banana-island",
+      "name": "Chuks Plumbing Solutions",
+      "category": "Plumber",
+      "rating": 4.8,
+      "description": "Borehole water treatment, water pump repair, and pipe installation specialist.",
+      "phone": "+234 803 444 5566",
+      "createdAt": "2026-01-20T10:00:00.000Z"
+    }
+  ],
+  "marketplaceItems": [
+    {
+      "id": "mkt-1",
+      "communityId": "comm-banana-island",
+      "sellerId": "usr-resident-chinedu",
+      "sellerName": "Chinedu Okafor",
+      "title": "Used Samsung 65\" 4K Smart TV (QLED)",
+      "description": "Like new condition, pristine display, includes wall mount and remote. Relocating sales.",
+      "price": 450000,
+      "images": [],
+      "status": "available",
+      "createdAt": "2026-03-02T14:00:00.000Z"
+    }
+  ]
+}
