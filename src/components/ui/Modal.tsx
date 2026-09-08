@@ -35,6 +35,12 @@ export function Modal({
   showClose = true,
   className,
 }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Close on Escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -54,11 +60,11 @@ export function Modal({
     }
   }, [open, handleKeyDown])
 
-  if (!open) return null
+  if (!open || !mounted) return null
 
   const content = (
     <div
-      className="modal-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
       aria-modal="true"
       role="dialog"
@@ -66,28 +72,28 @@ export function Modal({
     >
       <div
         className={cn(
-          'modal-content w-full rounded-2xl border border-border bg-card shadow-2xl',
+          'relative w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl animate-fade-in-scale',
           sizeMap[size],
           className
         )}
       >
         {(title || showClose) && (
-          <div className="flex items-start justify-between p-6 pb-0">
+          <div className="flex items-start justify-between p-6 pb-2 border-b border-border/50">
             <div>
               {title && (
-                <h2 id="modal-title" className="text-lg font-bold text-foreground tracking-tight">
+                <h2 id="modal-title" className="text-xl font-black text-foreground tracking-tight">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{description}</p>
               )}
             </div>
             {showClose && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 ml-4 shrink-0"
+                className="h-8 w-8 p-0 ml-4 shrink-0 rounded-lg"
                 onClick={onClose}
                 aria-label="Close modal"
               >
@@ -101,7 +107,6 @@ export function Modal({
     </div>
   )
 
-  if (typeof document === 'undefined') return null
   return createPortal(content, document.body)
 }
 

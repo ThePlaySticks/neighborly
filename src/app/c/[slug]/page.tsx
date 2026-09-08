@@ -130,39 +130,80 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center py-16 px-4">
-        <div className="max-w-xl w-full text-center space-y-8">
-          <div className="h-20 w-20 mx-auto rounded-3xl bg-primary/10 text-primary flex items-center justify-center font-black text-3xl shadow-sm">
-            {community.name[0]}
-          </div>
-
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-card text-xs font-semibold text-muted-foreground">
-              <Lock className="w-3.5 h-3.5 text-primary" /> Private Community Network
+      <main className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="max-w-xl w-full text-center space-y-6">
+          {/* Nextdoor-Style Estate Identity Card with Photo Header */}
+          <div className="relative rounded-3xl overflow-hidden border border-border shadow-2xl bg-card">
+            <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-muted">
+              {community.coverImage ? (
+                <img
+                  src={community.coverImage}
+                  alt={community.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-primary/30 to-muted" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-black/30 to-transparent" />
+              
+              <div className="absolute top-4 right-4">
+                <span className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-black/60 text-white backdrop-blur-md border border-white/10">
+                  {community.communityType}
+                </span>
+              </div>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight">
-              {community.name}
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {community.description || `Welcome to the private digital community for ${community.name}.`}
-            </p>
-          </div>
 
-          <Card className="p-6 bg-card border border-border/80 shadow-xl space-y-4">
-            <div className="text-xs text-muted-foreground">
-              Are you a resident or estate admin of {community.name}?
+            <div className="px-6 pb-8 pt-0 -mt-12 relative z-10 space-y-5">
+              <div className="h-20 w-20 mx-auto rounded-2xl bg-card border-2 border-border text-primary flex items-center justify-center font-black text-3xl shadow-xl overflow-hidden">
+                {community.logo ? (
+                  <img src={community.logo} alt={community.name} className="w-full h-full object-cover" />
+                ) : (
+                  community.name[0]
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Verified Private Estate Network
+                </div>
+                <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
+                  {community.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  {community.description || `Welcome to the private digital community for ${community.name}. Connect with verified neighbors, artisans, and estate management.`}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 pt-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" /> {community.location}, {community.city}
+                </p>
+              </div>
+
+              <div className="border-t border-border/70 pt-5 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link href={`/c/${community.slug}/join`} className="w-full">
+                    <Button className="w-full rounded-xl py-3 font-semibold text-xs gap-2 shadow-md">
+                      <UserPlus className="w-4 h-4" />
+                      Join This Community
+                    </Button>
+                  </Link>
+
+                  <Link href={`/login?redirect=/c/${community.slug}`} className="w-full">
+                    <Button variant="outline" className="w-full rounded-xl py-3 font-semibold text-xs gap-2">
+                      <LogIn className="w-4 h-4" />
+                      Resident Sign In
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="pt-2">
+                  <Link href={`/c/${community.slug}/admin`} className="text-[11px] text-muted-foreground hover:text-primary transition-colors font-medium">
+                    Estate Management Portal →
+                  </Link>
+                </div>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Link href={`/c/${community.slug}/join`} className="w-full">
-                <Button className="w-full rounded-xl py-3 font-semibold text-xs gap-2">
-                  <UserPlus className="w-4 h-4" />
-                  Join This Community
-                </Button>
-              </Link>
-
-              <Link href={`/login?redirect=/c/${community.slug}`} className="w-full">
-                <Button variant="outline" className="w-full rounded-xl py-3 font-semibold text-xs gap-2">
+          </div>
+        </div>
+      </main>
                   <LogIn className="w-4 h-4" />
                   Resident Sign In
                 </Button>

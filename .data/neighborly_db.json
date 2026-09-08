@@ -50,7 +50,9 @@
       "communityType": "Private Gated Island",
       "status": "active",
       "createdAt": "2026-01-01T08:00:00.000Z",
-      "updatedAt": "2026-01-01T08:00:00.000Z"
+      "updatedAt": "2026-01-01T08:00:00.000Z",
+      "coverImage": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&auto=format&fit=crop&q=80",
+      "logo": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=200&auto=format&fit=crop&q=80"
     },
     {
       "id": "comm-lekki-1",
@@ -64,7 +66,9 @@
       "communityType": "Residential Gated Estate",
       "status": "active",
       "createdAt": "2026-01-01T08:00:00.000Z",
-      "updatedAt": "2026-01-01T08:00:00.000Z"
+      "updatedAt": "2026-01-01T08:00:00.000Z",
+      "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80",
+      "logo": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200&auto=format&fit=crop&q=80"
     },
     {
       "id": "comm-emerald",
@@ -78,7 +82,9 @@
       "communityType": "Gated Residential Community",
       "status": "active",
       "createdAt": "2026-01-02T08:00:00.000Z",
-      "updatedAt": "2026-01-02T08:00:00.000Z"
+      "updatedAt": "2026-01-02T08:00:00.000Z",
+      "coverImage": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&auto=format&fit=crop&q=80",
+      "logo": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=200&auto=format&fit=crop&q=80"
     }
   ],
   "memberships": [
@@ -143,7 +149,9 @@
       "authorName": "Estate Management",
       "authorBlock": "Zone A",
       "content": "Water supply pipeline maintenance scheduled for tomorrow from 10:00 AM to 2:00 PM. Please store water in advance.",
-      "images": [],
+      "images": [
+        "https://images.unsplash.com/photo-1584467735815-f778f274e296?w=800&auto=format&fit=crop&q=80"
+      ],
       "isOfficial": true,
       "likesCount": 14,
       "createdAt": "2026-03-01T09:00:00.000Z",
@@ -156,7 +164,9 @@
       "authorName": "Chinedu Okafor",
       "authorBlock": "Block 4",
       "content": "Does anyone know a reliable electrician who can assist with an inverter & solar changeover setup today?",
-      "images": [],
+      "images": [
+        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80"
+      ],
       "isOfficial": false,
       "likesCount": 5,
       "createdAt": "2026-03-02T11:30:00.000Z",

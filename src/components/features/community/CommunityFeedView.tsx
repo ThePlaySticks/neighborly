@@ -70,38 +70,59 @@ export function CommunityFeedView({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-      {/* ESTATE HEADER BANNER */}
-      <div className="rounded-2xl border border-border bg-card p-6 mb-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-2xl shrink-0">
-            {community.name[0]}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-foreground">{community.name}</h1>
-              <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">
-                Verified Community
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-primary" />
-              {community.location}, {community.city} • <strong>{membersCount}</strong> verified neighbors
-            </p>
-          </div>
+      {/* NEXTDOOR-STYLE ESTATE COVER BANNER */}
+      <div className="relative rounded-2xl overflow-hidden border border-border shadow-md mb-8 bg-muted">
+        <div className="relative h-48 sm:h-60 w-full overflow-hidden">
+          {community.coverImage ? (
+            <img
+              src={community.coverImage}
+              alt={community.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-primary/20 via-background to-primary/10" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
         </div>
 
-        <div className="flex items-center gap-2">
-          {membership.role === 'COMMUNITY_ADMIN' && (
-            <Link href={`/c/${community.slug}/admin`}>
-              <Button size="sm" variant="outline" className="rounded-xl text-xs gap-1.5 border-primary/40 text-primary">
-                <Shield className="w-3.5 h-3.5" />
-                Admin Dashboard
-              </Button>
-            </Link>
-          )}
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-bold text-foreground">{currentUser.fullName}</p>
-            <p className="text-[10px] text-muted-foreground">{membership.block} • House {membership.houseNumber}</p>
+        <div className="absolute bottom-0 inset-x-0 p-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-card border-2 border-white/20 text-primary flex items-center justify-center font-black text-2xl shadow-xl overflow-hidden shrink-0">
+              {community.logo ? (
+                <img src={community.logo} alt={community.name} className="w-full h-full object-cover" />
+              ) : (
+                community.name[0]
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md">
+                  {community.name}
+                </h1>
+                <Badge variant="outline" className="text-xs bg-emerald-500/20 text-emerald-300 border-emerald-400/30 backdrop-blur-sm">
+                  Verified Estate
+                </Badge>
+              </div>
+              <p className="text-xs text-white/80 mt-1 flex items-center gap-1.5 drop-shadow-sm">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                {community.location}, {community.city} • <strong className="text-white">{membersCount}</strong> verified neighbors
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {membership.role === 'COMMUNITY_ADMIN' && (
+              <Link href={`/c/${community.slug}/admin`}>
+                <Button size="sm" className="rounded-xl text-xs gap-1.5 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+                  <Shield className="w-3.5 h-3.5" />
+                  Admin Dashboard
+                </Button>
+              </Link>
+            )}
+            <div className="text-right hidden sm:block bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
+              <p className="text-xs font-bold text-white">{currentUser.fullName}</p>
+              <p className="text-[10px] text-white/70">{membership.block} • House {membership.houseNumber}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -232,6 +253,16 @@ export function CommunityFeedView({
                   <p className="text-xs sm:text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {post.content}
                   </p>
+
+                  {post.images && post.images.length > 0 && (
+                    <div className="rounded-xl overflow-hidden border border-border/60 max-h-80 bg-muted">
+                      <img
+                        src={post.images[0]}
+                        alt="Post media"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-4 pt-2 border-t border-border/50 text-xs text-muted-foreground">
                     <button
